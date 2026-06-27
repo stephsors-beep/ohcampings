@@ -1,21 +1,23 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { createClient } from "@supabase/supabase-js";
 
-// ── Theme Oh! Campings ────────────────────────────────────────────────────────
+const supabase = createClient(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_ANON_KEY
+);
+
+// ── Theme ─────────────────────────────────────────────────────────────────────
 const C = {
   bg: "#FFF8F0", surface: "#FFF0DC", card: "#FFFFFF", border: "#F0D9B5",
   teal: "#F5A623", tealDim: "#F5A62318", amber: "#E8890A", red: "#EF4444",
   purple: "#5B9BD5", green: "#22C55E", text: "#2C2C2C", muted: "#9A8A78",
 };
-
 const ROLE_COLORS = { Gérant: C.teal, Gestionnaire: C.purple, Invité: C.amber };
 
-// ── Inventaire type Estival ───────────────────────────────────────────────────
 const ESTIVAL_INVENTORY = [
-  // Petit électroménager
   { category: "Petit électroménager", name: "Cafetière électrique 15T 1,5L à filtre", qty: 1 },
   { category: "Petit électroménager", name: "Micro ondes 20L", qty: 1 },
   { category: "Petit électroménager", name: "Cloche micro ondes", qty: 1 },
-  // Cuisine - Vaisselle
   { category: "Cuisine - Vaisselle", name: "Assiette plate 26cm", qty: 6 },
   { category: "Cuisine - Vaisselle", name: "Assiette creuse 20cm", qty: 6 },
   { category: "Cuisine - Vaisselle", name: "Assiette dessert 19cm", qty: 6 },
@@ -29,12 +31,10 @@ const ESTIVAL_INVENTORY = [
   { category: "Cuisine - Vaisselle", name: "Fourchette table", qty: 8 },
   { category: "Cuisine - Vaisselle", name: "Cuillère table", qty: 8 },
   { category: "Cuisine - Vaisselle", name: "Cuillère café", qty: 8 },
-  // Cuisine - Cuisson
   { category: "Cuisine - Cuisson", name: "Casserole inox 16cm", qty: 1 },
   { category: "Cuisine - Cuisson", name: "Casserole inox 18cm", qty: 1 },
   { category: "Cuisine - Cuisson", name: "Faitout inox 24cm", qty: 1 },
   { category: "Cuisine - Cuisson", name: "Poêle aluminium 28cm", qty: 1 },
-  // Cuisine - Utilitaires
   { category: "Cuisine - Utilitaires", name: "Passoire légumes 27cm", qty: 1 },
   { category: "Cuisine - Utilitaires", name: "Couverts à salade", qty: 1 },
   { category: "Cuisine - Utilitaires", name: "Couvercle inox 21cm", qty: 1 },
@@ -58,7 +58,6 @@ const ESTIVAL_INVENTORY = [
   { category: "Cuisine - Utilitaires", name: "Cendrier verre", qty: 1 },
   { category: "Cuisine - Utilitaires", name: "Dessous plat chromé", qty: 1 },
   { category: "Cuisine - Utilitaires", name: "Plateau 43x32cm", qty: 1 },
-  // Articles ménagers - Aménagement
   { category: "Articles ménagers - Aménagement", name: "Egouttoir à vaisselle", qty: 1 },
   { category: "Articles ménagers - Aménagement", name: "Range couverts", qty: 1 },
   { category: "Articles ménagers - Aménagement", name: "Poubelle 25L", qty: 1 },
@@ -67,72 +66,18 @@ const ESTIVAL_INVENTORY = [
   { category: "Articles ménagers - Aménagement", name: "Séchoir à linge résine blanc", qty: 1 },
   { category: "Articles ménagers - Aménagement", name: "Pince à linge", qty: 24 },
   { category: "Articles ménagers - Aménagement", name: "Cintres", qty: 8 },
-  // Articles ménagers - Entretien
   { category: "Articles ménagers - Entretien", name: "Balai vinyle", qty: 1 },
   { category: "Articles ménagers - Entretien", name: "Pelle balayette", qty: 1 },
   { category: "Articles ménagers - Entretien", name: "Brosse à vaisselle", qty: 1 },
   { category: "Articles ménagers - Entretien", name: "Cuvette ronde 32cm", qty: 1 },
   { category: "Articles ménagers - Entretien", name: "Ensemble seau espagnol", qty: 1 },
   { category: "Articles ménagers - Entretien", name: "Jerrican", qty: 1 },
-  // Mobilier extérieur
   { category: "Mobilier extérieur", name: "Table rectangulaire 138x88 résine anthracite", qty: 1 },
   { category: "Mobilier extérieur", name: "Fauteuil haut dossier anthracite", qty: 5 },
-  // Couchage
   { category: "Couchage", name: "Oreiller 60x60", qty: 5 },
   { category: "Couchage", name: "Housse protection oreiller", qty: 5 },
   { category: "Couchage", name: "Couette 1P 140x200 450g", qty: 3 },
   { category: "Couchage", name: "Couette 2P 240x220 450g", qty: 2 },
-];
-
-// ── Initial Data ──────────────────────────────────────────────────────────────
-const INIT_COMPANIES = [
-  { id: 1, name: "Oh! Campings", color: "#F5A623" },
-];
-
-const INIT_LODGING_MODELS = [
-  {
-    id: 1, companyId: 1, name: "Estival", description: "Logement estival standard",
-    features: { sanitaire: false, eau: false, electricite: true },
-    inventory: ESTIVAL_INVENTORY.map((item, i) => ({ id: i + 1, ...item }))
-  },
-];
-
-const INIT_DESTINATIONS = [
-  { id: 1, companyId: 1, name: "Camping Le Soleil", city: "Arcachon", address: "123 avenue de la plage", managerId: 1 },
-  { id: 2, companyId: 1, name: "Camping Les Pins", city: "Hossegor", address: "45 rue des pins", managerId: 2 },
-];
-
-const INIT_LODGINGS = [
-  { id: 1, companyId: 1, destinationId: 1, modelId: 1, name: "Estival A1", number: "A1" },
-  { id: 2, companyId: 1, destinationId: 1, modelId: 1, name: "Estival A2", number: "A2" },
-  { id: 3, companyId: 1, destinationId: 2, modelId: 1, name: "Estival B1", number: "B1" },
-];
-
-// Inventory items per lodging: { id, lodgingId, itemName, category, expectedQty, actualQty }
-const buildLodgingInventory = (lodgings, models) => {
-  const items = [];
-  let nextId = 1;
-  lodgings.forEach(l => {
-    const model = models.find(m => m.id === l.modelId);
-    if (!model) return;
-    model.inventory.forEach(item => {
-      items.push({ id: nextId++, lodgingId: l.id, companyId: l.companyId, itemName: item.name, category: item.category, expectedQty: item.qty, actualQty: item.qty });
-    });
-  });
-  return items;
-};
-
-const INIT_INVENTORY_ITEMS = buildLodgingInventory(INIT_LODGINGS, INIT_LODGING_MODELS);
-
-const INIT_REPAIRS = [];
-const INIT_REPAIRERS = [
-  { id: 1, companyId: 1, name: "Couturier Dupont", phone: "06 11 22 33 44", email: "dupont@couture.fr", address: "12 rue des artisans, Arcachon" },
-];
-
-const INIT_USERS = [
-  { id: 1, companyId: 1, name: "Sophie Martin", email: "s.martin@ohcampings.fr", phone: "06 12 34 56 78", role: "Gérant", destinationId: null, seePrice: true, password: "1234" },
-  { id: 2, companyId: 1, name: "Marc Dubois", email: "m.dubois@ohcampings.fr", phone: "06 98 76 54 32", role: "Gestionnaire", destinationId: null, seePrice: false, password: "1234" },
-  { id: 3, companyId: 1, name: "Léa Bernard", email: "l.bernard@ohcampings.fr", phone: "07 11 22 33 44", role: "Invité", destinationId: 1, seePrice: false, password: "1234" },
 ];
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
@@ -144,7 +89,6 @@ const Ic = ({ d, size = 18, color = "currentColor" }) => (
 const ic = {
   home: "M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z M9 22V12h6v10",
   dest: "M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z M12 7a3 3 0 100 6 3 3 0 000-6z",
-  lodge: "M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z",
   model: "M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5z M4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6z M16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z",
   repair: "M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z",
   users: "M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2 M9 7a4 4 0 100 8 4 4 0 000-8z M23 21v-2a4 4 0 00-3-3.87 M16 3.13a4 4 0 010 7.75",
@@ -155,17 +99,14 @@ const ic = {
   close: "M18 6L6 18 M6 6l12 12",
   menu: "M3 12h18 M3 6h18 M3 18h18",
   back: "M19 12H5 M12 19l-7-7 7-7",
-  chart: "M18 20V10 M12 20V4 M6 20v-6",
-  check: "M20 6L9 17l-5-5",
   eye: "M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z M12 9a3 3 0 100 6 3 3 0 000-6z",
   eyeoff: "M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94 M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19 M1 1l22 22",
-  alert: "M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z M12 9v4 M12 17h.01",
-  mail: "M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z M22 6l-10 7L2 6",
-  phone: "M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.8a19.79 19.79 0 01-3.07-8.64A2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z",
   team: "M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2 M23 21v-2a4 4 0 00-3-3.87 M16 3.13a4 4 0 010 7.75 M9 7a4 4 0 100 8 4 4 0 000-8z",
   journal: "M4 6h16 M4 10h16 M4 14h8 M4 18h4",
-  box: "M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z",
-  send: "M22 2L11 13 M22 2l-7 20-4-9-9-4 20-7z",
+  check: "M20 6L9 17l-5-5",
+  mail: "M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z M22 6l-10 7L2 6",
+  phone: "M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.8a19.79 19.79 0 01-3.07-8.64A2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z",
+  map: "M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z M12 7a3 3 0 100 6 3 3 0 000-6z",
 };
 
 const useIsMobile = () => {
@@ -177,6 +118,13 @@ const useIsMobile = () => {
 // ── UI Components ─────────────────────────────────────────────────────────────
 const Badge = ({ label, color = C.muted }) => (
   <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 99, fontSize: 11, fontWeight: 700, background: color + "22", color, border: `1px solid ${color}44` }}>{label}</span>
+);
+
+const Spinner = () => (
+  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 40 }}>
+    <div style={{ width: 32, height: 32, border: `3px solid ${C.border}`, borderTop: `3px solid ${C.teal}`, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+    <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+  </div>
 );
 
 const Modal = ({ title, onClose, children }) => (
@@ -258,9 +206,7 @@ const LoginScreen = ({ users, onLogin }) => {
   return (
     <div style={{ minHeight: "100vh", background: C.bg, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
       <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 20, padding: 36, width: "100%", maxWidth: 360, textAlign: "center", boxShadow: "0 4px 24px #F5A62322" }}>
-        <div style={{ width: 70, height: 70, borderRadius: 18, background: C.teal, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
-          <span style={{ fontSize: 36 }}>⛺</span>
-        </div>
+        <div style={{ width: 70, height: 70, borderRadius: 18, background: C.teal, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", fontSize: 36 }}>⛺</div>
         <h1 style={{ margin: "0 0 2px", fontSize: 24, fontWeight: 800, color: C.text }}>Oh! Campings</h1>
         <p style={{ margin: "0 0 28px", color: C.muted, fontSize: 13 }}>Gestion des équipements</p>
         <div style={{ marginBottom: 14, textAlign: "left" }}>
@@ -287,18 +233,23 @@ const LoginScreen = ({ users, onLogin }) => {
 // ── Main App ──────────────────────────────────────────────────────────────────
 export default function App() {
   const isMobile = useIsMobile();
+  const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState(null);
   const [tab, setTab] = useState("dashboard");
   const [sideOpen, setSideOpen] = useState(false);
-  const [users, setUsers] = useState(INIT_USERS);
-  const [destinations, setDestinations] = useState(INIT_DESTINATIONS);
-  const [lodgingModels, setLodgingModels] = useState(INIT_LODGING_MODELS);
-  const [lodgings, setLodgings] = useState(INIT_LODGINGS);
-  const [inventoryItems, setInventoryItems] = useState(INIT_INVENTORY_ITEMS);
-  const [repairs, setRepairs] = useState(INIT_REPAIRS);
-  const [repairers, setRepairers] = useState(INIT_REPAIRERS);
+
+  // Data from Supabase
+  const [users, setUsers] = useState([]);
+  const [destinations, setDestinations] = useState([]);
+  const [lodgingModels, setLodgingModels] = useState([]);
+  const [lodgings, setLodgings] = useState([]);
+  const [inventoryItems, setInventoryItems] = useState([]);
+  const [repairs, setRepairs] = useState([]);
+  const [repairers, setRepairers] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [journal, setJournal] = useState([]);
+
+  // UI state
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({});
   const [confirm, setConfirm] = useState(null);
@@ -306,225 +257,310 @@ export default function App() {
   const [selectedDest, setSelectedDest] = useState(null);
   const [selectedLodging, setSelectedLodging] = useState(null);
   const [selectedModel, setSelectedModel] = useState(null);
-  const [expandedCats, setExpandedCats] = useState({});
   const [selectedRepairer, setSelectedRepairer] = useState(null);
+  const [expandedCats, setExpandedCats] = useState({});
 
   const isGerant = currentUser?.role === "Gérant";
-  const isAdmin = currentUser?.role === "Gérant" || currentUser?.role === "Gestionnaire";
+  const isAdmin = ["Gérant", "Gestionnaire"].includes(currentUser?.role);
   const isInvite = currentUser?.role === "Invité";
-  const cid = currentUser?.companyId;
+  const cid = currentUser?.company_id;
 
-  // Filtered by company
-  const myDests = destinations.filter(d => d.companyId === cid);
-  const myUsers = users.filter(u => u.companyId === cid);
-  const myModels = lodgingModels.filter(m => m.companyId === cid);
-  const myLodgings = lodgings.filter(l => l.companyId === cid);
-  const myRepairs = repairs.filter(r => r.companyId === cid);
-  const myRepairers = repairers.filter(r => r.companyId === cid);
+  // ── Load all data ───────────────────────────────────────────────────────────
+  const loadAll = async (companyId) => {
+    const [
+      { data: u }, { data: d }, { data: lm }, { data: l },
+      { data: inv }, { data: rep }, { data: repr }, { data: notifs }, { data: jrn }
+    ] = await Promise.all([
+      supabase.from("users").select("*").eq("company_id", companyId),
+      supabase.from("destinations").select("*").eq("company_id", companyId),
+      supabase.from("lodging_models").select("*").eq("company_id", companyId),
+      supabase.from("lodgings").select("*").eq("company_id", companyId),
+      supabase.from("inventory_items").select("*").eq("company_id", companyId),
+      supabase.from("repairs").select("*").eq("company_id", companyId),
+      supabase.from("repairers").select("*").eq("company_id", companyId),
+      supabase.from("notifications").select("*"),
+      supabase.from("journal").select("*").order("id", { ascending: false }).limit(100),
+    ]);
+    if (u) setUsers(u);
+    if (d) setDestinations(d);
+    if (lm) setLodgingModels(lm.map(m => ({ ...m, inventory: m.inventory || [] })));
+    if (l) setLodgings(l);
+    if (inv) setInventoryItems(inv);
+    if (rep) setRepairs(rep);
+    if (repr) setRepairers(repr);
+    if (notifs) setNotifications(notifs);
+    if (jrn) setJournal(jrn);
+  };
 
-  // Invité sees only their destination
-  const visibleDests = isInvite && currentUser.destinationId
-    ? myDests.filter(d => d.id === currentUser.destinationId)
-    : myDests;
+  // Initial load — fetch users for login
+  useEffect(() => {
+    const init = async () => {
+      // Check if Oh Campings company exists
+      const { data: companies } = await supabase.from("companies").select("*");
+      if (!companies || companies.length === 0) {
+        // First time: seed initial data
+        await seedInitialData();
+      }
+      const { data: u } = await supabase.from("users").select("*");
+      if (u) setUsers(u);
+      setLoading(false);
+    };
+    init();
+  }, []);
 
-  const unreadNotifs = notifications.filter(n => !n.read && n.userId === currentUser?.id).length;
-  const myNotifs = notifications.filter(n => n.userId === currentUser?.id);
+  const seedInitialData = async () => {
+    // Create company
+    const { data: company } = await supabase.from("companies").insert({ name: "Oh! Campings", color: "#F5A623" }).select().single();
+    if (!company) return;
+    const cid = company.id;
 
-  if (!currentUser) return <LoginScreen users={users} onLogin={u => setCurrentUser(u)} />;
+    // Create users
+    const { data: usersData } = await supabase.from("users").insert([
+      { company_id: cid, name: "Sophie Martin", email: "s.martin@ohcampings.fr", phone: "06 12 34 56 78", role: "Gérant", see_price: true, password: "1234" },
+      { company_id: cid, name: "Marc Dubois", email: "m.dubois@ohcampings.fr", phone: "06 98 76 54 32", role: "Gestionnaire", see_price: false, password: "1234" },
+      { company_id: cid, name: "Léa Bernard", email: "l.bernard@ohcampings.fr", phone: "07 11 22 33 44", role: "Invité", see_price: false, password: "1234" },
+    ]).select();
 
+    // Create Estival model
+    const { data: model } = await supabase.from("lodging_models").insert({
+      company_id: cid, name: "Estival", description: "Logement estival standard",
+      inventory: ESTIVAL_INVENTORY.map((item, i) => ({ id: i + 1, ...item }))
+    }).select().single();
+
+    // Create destinations
+    const { data: dests } = await supabase.from("destinations").insert([
+      { company_id: cid, name: "Camping Le Soleil", city: "Arcachon", address: "123 avenue de la plage", manager_id: usersData?.[0]?.id },
+      { company_id: cid, name: "Camping Les Pins", city: "Hossegor", address: "45 rue des pins", manager_id: usersData?.[1]?.id },
+    ]).select();
+
+    if (dests && model) {
+      // Create lodgings with inventory
+      for (const [i, lodgingData] of [
+        { destination_id: dests[0].id, model_id: model.id, name: "Estival A1", number: "A1" },
+        { destination_id: dests[0].id, model_id: model.id, name: "Estival A2", number: "A2" },
+        { destination_id: dests[1].id, model_id: model.id, name: "Estival B1", number: "B1" },
+      ].entries()) {
+        const { data: lodging } = await supabase.from("lodgings").insert({ company_id: cid, ...lodgingData }).select().single();
+        if (lodging) {
+          const invItems = ESTIVAL_INVENTORY.map(item => ({
+            lodging_id: lodging.id, company_id: cid,
+            item_name: item.name, category: item.category,
+            expected_qty: item.qty, actual_qty: item.qty
+          }));
+          await supabase.from("inventory_items").insert(invItems);
+        }
+      }
+    }
+
+    // Update Léa's destination
+    if (usersData && dests) {
+      await supabase.from("users").update({ destination_id: dests[0].id }).eq("id", usersData[2].id);
+    }
+  };
+
+  const handleLogin = async (user) => {
+    setCurrentUser(user);
+    setLoading(true);
+    await loadAll(user.company_id);
+    setLoading(false);
+  };
+
+  // Helpers
   const ff = k => e => setForm(p => ({ ...p, [k]: e.target.value }));
   const dest = id => destinations.find(d => d.id === +id);
   const usr = id => users.find(u => u.id === +id);
-  const model = id => lodgingModels.find(m => m.id === +id);
-  const goTo = t => { setTab(t); setSideOpen(false); setSelectedDest(null); setSelectedLodging(null); setSelectedModel(null); };
+  const modelById = id => lodgingModels.find(m => m.id === +id);
+  const goTo = t => { setTab(t); setSideOpen(false); setSelectedDest(null); setSelectedLodging(null); setSelectedModel(null); setSelectedRepairer(null); };
   const askConfirm = (msg, fn, okLabel = "Supprimer", okVariant = "danger") => setConfirm({ msg, onOk: () => { fn(); setConfirm(null); }, okLabel, okVariant });
 
-  const addJournal = (action, detail) => setJournal(j => [{ id: Date.now(), date: new Date().toLocaleString("fr"), userId: currentUser.id, userName: currentUser.name, action, detail }, ...j]);
-  const addNotif = (msg, targetIds) => {
-    const ids = targetIds || myUsers.filter(u => u.role === "Gérant" || u.role === "Gestionnaire").map(u => u.id);
-    ids.forEach(uid => setNotifications(n => [{ id: Date.now() + Math.random(), userId: uid, msg, date: new Date().toLocaleString("fr"), read: false }, ...n]));
+  const myDests = destinations.filter(d => d.company_id === cid);
+  const myUsers = users.filter(u => u.company_id === cid);
+  const myModels = lodgingModels.filter(m => m.company_id === cid);
+  const myLodgings = lodgings.filter(l => l.company_id === cid);
+  const myRepairs = repairs.filter(r => r.company_id === cid);
+  const myRepairers = repairers.filter(r => r.company_id === cid);
+  const visibleDests = isInvite && currentUser?.destination_id ? myDests.filter(d => d.id === currentUser.destination_id) : myDests;
+
+  const unreadNotifs = notifications.filter(n => !n.read && n.user_id === currentUser?.id).length;
+  const myNotifs = notifications.filter(n => n.user_id === currentUser?.id);
+
+  const addJournal = async (action, detail) => {
+    const entry = { user_id: currentUser.id, user_name: currentUser.name, action, detail, date: new Date().toLocaleString("fr") };
+    const { data } = await supabase.from("journal").insert(entry).select().single();
+    if (data) setJournal(j => [data, ...j]);
   };
 
-  // ── Lodging inventory helpers ───────────────────────────────────────────────
-  const getLodgingItems = lodgingId => inventoryItems.filter(i => i.lodgingId === lodgingId);
+  const addNotif = async (msg, targetIds) => {
+    const ids = targetIds || myUsers.filter(u => ["Gérant", "Gestionnaire"].includes(u.role)).map(u => u.id);
+    const notifRows = ids.map(uid => ({ user_id: uid, msg, type: "info", date: new Date().toLocaleString("fr"), read: false }));
+    const { data } = await supabase.from("notifications").insert(notifRows).select();
+    if (data) setNotifications(n => [...data, ...n]);
+  };
 
+  // Inventory helpers
+  const getLodgingItems = lodgingId => inventoryItems.filter(i => i.lodging_id === lodgingId);
+  const getLodgingMissing = lodgingId => getLodgingItems(lodgingId).reduce((t, i) => t + Math.max(0, i.expected_qty - i.actual_qty), 0);
   const getDestSummary = destId => {
-    const destLodgings = myLodgings.filter(l => l.destinationId === destId);
     const summary = {};
-    destLodgings.forEach(l => {
+    myLodgings.filter(l => l.destination_id === destId).forEach(l => {
       getLodgingItems(l.id).forEach(item => {
-        if (!summary[item.itemName]) summary[item.itemName] = { category: item.category, expected: 0, actual: 0 };
-        summary[item.itemName].expected += item.expectedQty;
-        summary[item.itemName].actual += item.actualQty;
+        if (!summary[item.item_name]) summary[item.item_name] = { category: item.category, expected: 0, actual: 0 };
+        summary[item.item_name].expected += item.expected_qty;
+        summary[item.item_name].actual += item.actual_qty;
       });
     });
     return summary;
   };
+  const getMissingCount = destId => Object.values(getDestSummary(destId)).reduce((t, v) => t + Math.max(0, v.expected - v.actual), 0);
 
-  const getMissingCount = destId => {
-    const s = getDestSummary(destId);
-    return Object.values(s).reduce((total, item) => total + Math.max(0, item.expected - item.actual), 0);
-  };
-
-  const getLodgingMissing = lodgingId => {
-    return getLodgingItems(lodgingId).reduce((t, i) => t + Math.max(0, i.expectedQty - i.actualQty), 0);
-  };
-
-  // ── Lodging models CRUD ─────────────────────────────────────────────────────
-  const openAddModel = () => { setForm({ name: "", description: "" }); setModal({ type: "model" }); };
-  const openEditModel = m => { setSelectedModel(m); setTab("modelDetail"); };
-  const saveModel = () => {
+  // ── CRUD Destinations ───────────────────────────────────────────────────────
+  const openAddDest = () => { setForm({ name: "", city: "", address: "", manager_id: myUsers[0]?.id || "" }); setModal({ type: "dest" }); };
+  const saveDest = async () => {
     if (!form.name) return;
-    const newModel = { id: Date.now(), companyId: cid, name: form.name, description: form.description || "", features: { sanitaire: false, eau: false, electricite: false }, inventory: [] };
-    setLodgingModels(ms => [...ms, newModel]);
-    addJournal("Modèle créé", form.name);
-    setModal(null);
-  };
-  const addModelItem = () => {
-    if (!form.itemName || !form.itemQty || !selectedModel) return;
-    const cat = form.showNewModelCat && form.newModelCatName ? form.newModelCatName : form.itemCat || "Divers";
-    const newItem = { id: Date.now(), category: cat, name: form.itemName, qty: +form.itemQty };
-    setLodgingModels(ms => ms.map(m => m.id === selectedModel.id ? { ...m, inventory: [...m.inventory, newItem] } : m));
-    setSelectedModel(prev => ({ ...prev, inventory: [...prev.inventory, newItem] }));
-    // Auto-add to all lodgings of this model with actualQty: 0
-    const affectedLodgings = myLodgings.filter(l => l.modelId === selectedModel.id);
-    const newInvItems = affectedLodgings.map((l, i) => ({
-      id: Date.now() + i + 1, lodgingId: l.id, companyId: cid,
-      itemName: form.itemName, category: cat,
-      expectedQty: +form.itemQty, actualQty: 0
-    }));
-    if (newInvItems.length > 0) setInventoryItems(items => [...items, ...newInvItems]);
-    setForm(f => ({ ...f, itemName: "", itemQty: 1, showNewModelCat: false, newModelCatName: "" }));
-  };
-  const updateModelItemQty = (modelId, itemId, qty) => {
-    // Update model
-    setLodgingModels(ms => ms.map(m => m.id === modelId ? { ...m, inventory: m.inventory.map(i => i.id === itemId ? { ...i, qty: +qty } : i) } : m));
-    setSelectedModel(prev => prev ? { ...prev, inventory: prev.inventory.map(i => i.id === itemId ? { ...i, qty: +qty } : i) } : prev);
-    // Update expectedQty in all lodgings of this model
-    const itemName = selectedModel?.inventory.find(i => i.id === itemId)?.name;
-    if (itemName) {
-      setInventoryItems(items => items.map(i => {
-        const lodging = myLodgings.find(l => l.id === i.lodgingId && l.modelId === modelId);
-        return lodging && i.itemName === itemName ? { ...i, expectedQty: +qty } : i;
-      }));
+    const row = { company_id: cid, name: form.name, city: form.city || "", address: form.address || "", manager_id: +form.manager_id || null };
+    if (modal.id) {
+      const { data } = await supabase.from("destinations").update(row).eq("id", modal.id).select().single();
+      if (data) setDestinations(ds => ds.map(d => d.id === modal.id ? data : d));
+    } else {
+      const { data } = await supabase.from("destinations").insert(row).select().single();
+      if (data) setDestinations(ds => [...ds, data]);
     }
-  };
-  const deleteModelItem = (modelId, itemId) => {
-    setLodgingModels(ms => ms.map(m => m.id === modelId ? { ...m, inventory: m.inventory.filter(i => i.id !== itemId) } : m));
-    setSelectedModel(prev => prev ? { ...prev, inventory: prev.inventory.filter(i => i.id !== itemId) } : prev);
-  };
-
-  // ── Destinations CRUD ───────────────────────────────────────────────────────
-  const openAddDest = () => { setForm({ name: "", city: "", address: "", managerId: myUsers[0]?.id || "" }); setModal({ type: "dest" }); };
-  const saveDest = () => {
-    if (!form.name) return;
-    const d = { ...form, id: modal.id || Date.now(), companyId: cid, managerId: +form.managerId || null };
-    setDestinations(ds => modal.id ? ds.map(x => x.id === modal.id ? d : x) : [...ds, d]);
     addJournal(modal.id ? "Destination modifiée" : "Destination créée", form.name);
     setModal(null);
   };
 
-  // ── Lodgings CRUD ───────────────────────────────────────────────────────────
-  const openAddLodging = destId => {
-    setForm({ name: "", number: "", modelId: myModels[0]?.id || "", destinationId: destId });
-    setModal({ type: "lodging" });
-  };
-  const saveLodging = () => {
+  // ── CRUD Lodging Models ─────────────────────────────────────────────────────
+  const openAddModel = () => { setForm({ name: "", description: "" }); setModal({ type: "model" }); };
+  const saveModel = async () => {
     if (!form.name) return;
-    const m = model(form.modelId);
-    const newLodging = { id: Date.now(), companyId: cid, destinationId: +form.destinationId, modelId: +form.modelId || null, name: form.name, number: form.number || "" };
-    setLodgings(ls => [...ls, newLodging]);
-    // Auto-create inventory from model
-    if (m && m.inventory.length > 0) {
-      const newItems = m.inventory.map((item, i) => ({
-        id: Date.now() + i + 1,
-        lodgingId: newLodging.id,
-        companyId: cid,
-        itemName: item.name,
-        category: item.category,
-        expectedQty: item.qty,
-        actualQty: item.qty
-      }));
-      setInventoryItems(items => [...items, ...newItems]);
+    const row = { company_id: cid, name: form.name, description: form.description || "", inventory: [] };
+    const { data } = await supabase.from("lodging_models").insert(row).select().single();
+    if (data) { setLodgingModels(ms => [...ms, { ...data, inventory: [] }]); addJournal("Modèle créé", form.name); }
+    setModal(null);
+  };
+  const openEditModel = m => { setSelectedModel(m); setTab("modelDetail"); };
+
+  const addModelItem = async () => {
+    if (!form.itemName || !form.itemQty || !selectedModel) return;
+    const cat = form.showNewModelCat && form.newModelCatName ? form.newModelCatName : form.itemCat || "Divers";
+    const newItem = { id: Date.now(), category: cat, name: form.itemName, qty: +form.itemQty };
+    const newInventory = [...selectedModel.inventory, newItem];
+    const { data } = await supabase.from("lodging_models").update({ inventory: newInventory }).eq("id", selectedModel.id).select().single();
+    if (data) {
+      setLodgingModels(ms => ms.map(m => m.id === selectedModel.id ? { ...data, inventory: newInventory } : m));
+      setSelectedModel(prev => ({ ...prev, inventory: newInventory }));
+      // Add to all lodgings of this model
+      const affected = myLodgings.filter(l => l.model_id === selectedModel.id);
+      for (const l of affected) {
+        const existing = getLodgingItems(l.id).find(i => i.item_name === form.itemName);
+        if (!existing) {
+          const invRow = { lodging_id: l.id, company_id: cid, item_name: form.itemName, category: cat, expected_qty: +form.itemQty, actual_qty: 0 };
+          const { data: inv } = await supabase.from("inventory_items").insert(invRow).select().single();
+          if (inv) setInventoryItems(items => [...items, inv]);
+        }
+      }
     }
-    addJournal("Logement créé", `${form.name}${m ? ` (${m.name} — ${m.inventory.length} articles)` : ""}`);
+    setForm(f => ({ ...f, itemName: "", itemQty: 1, showNewModelCat: false, newModelCatName: "" }));
+  };
+
+  const updateModelItemQty = async (modelId, itemId, qty) => {
+    const m = lodgingModels.find(x => x.id === modelId);
+    if (!m) return;
+    const itemName = m.inventory.find(i => i.id === itemId)?.name;
+    const newInventory = m.inventory.map(i => i.id === itemId ? { ...i, qty: +qty } : i);
+    await supabase.from("lodging_models").update({ inventory: newInventory }).eq("id", modelId);
+    setLodgingModels(ms => ms.map(x => x.id === modelId ? { ...x, inventory: newInventory } : x));
+    setSelectedModel(prev => prev ? { ...prev, inventory: newInventory } : prev);
+    // Update expected_qty in all lodgings
+    if (itemName) {
+      const affected = myLodgings.filter(l => l.model_id === modelId);
+      for (const l of affected) {
+        const invItem = getLodgingItems(l.id).find(i => i.item_name === itemName);
+        if (invItem) {
+          await supabase.from("inventory_items").update({ expected_qty: +qty }).eq("id", invItem.id);
+          setInventoryItems(items => items.map(i => i.id === invItem.id ? { ...i, expected_qty: +qty } : i));
+        }
+      }
+    }
+  };
+
+  const deleteModelItem = async (modelId, itemId) => {
+    const m = lodgingModels.find(x => x.id === modelId);
+    if (!m) return;
+    const newInventory = m.inventory.filter(i => i.id !== itemId);
+    await supabase.from("lodging_models").update({ inventory: newInventory }).eq("id", modelId);
+    setLodgingModels(ms => ms.map(x => x.id === modelId ? { ...x, inventory: newInventory } : x));
+    setSelectedModel(prev => prev ? { ...prev, inventory: newInventory } : prev);
+  };
+
+  // ── CRUD Lodgings ───────────────────────────────────────────────────────────
+  const openAddLodging = destId => { setForm({ name: "", number: "", model_id: myModels[0]?.id || "", destination_id: destId }); setModal({ type: "lodging" }); };
+  const saveLodging = async () => {
+    if (!form.name) return;
+    const m = modelById(form.model_id);
+    const row = { company_id: cid, destination_id: +form.destination_id, model_id: +form.model_id || null, name: form.name, number: form.number || "" };
+    const { data: lodging } = await supabase.from("lodgings").insert(row).select().single();
+    if (lodging) {
+      setLodgings(ls => [...ls, lodging]);
+      // Auto-create inventory from model
+      if (m && m.inventory.length > 0) {
+        const invRows = m.inventory.map(item => ({ lodging_id: lodging.id, company_id: cid, item_name: item.name, category: item.category, expected_qty: item.qty, actual_qty: item.qty }));
+        const { data: invData } = await supabase.from("inventory_items").insert(invRows).select();
+        if (invData) setInventoryItems(items => [...items, ...invData]);
+      }
+      addJournal("Logement créé", `${form.name}${m ? ` (${m.name})` : ""}`);
+    }
     setModal(null);
   };
 
-  // ── Add articles to lodging ─────────────────────────────────────────────────
+  // ── Inventory ───────────────────────────────────────────────────────────────
+  const updateActualQty = async (itemId, qty) => {
+    const newQty = Math.max(0, +qty);
+    await supabase.from("inventory_items").update({ actual_qty: newQty }).eq("id", itemId);
+    setInventoryItems(items => items.map(i => i.id === itemId ? { ...i, actual_qty: newQty } : i));
+  };
+
   const getAllKnownArticles = () => {
     const all = {};
-    // From all model inventories
-    myModels.forEach(mod => mod.inventory.forEach(item => {
+    myModels.forEach(mod => (mod.inventory || []).forEach(item => {
       if (!all[item.name]) all[item.name] = { id: `art_${item.name}`, name: item.name, category: item.category, defaultQty: item.qty };
     }));
-    // From all existing lodging inventories
-    inventoryItems.filter(i => i.companyId === cid).forEach(item => {
-      if (!all[item.itemName]) all[item.itemName] = { id: `art_${item.itemName}`, name: item.itemName, category: item.category, defaultQty: item.expectedQty };
+    inventoryItems.filter(i => i.company_id === cid).forEach(item => {
+      if (!all[item.item_name]) all[item.item_name] = { id: `art_${item.item_name}`, name: item.item_name, category: item.category, defaultQty: item.expected_qty };
     });
     return all;
   };
 
   const openAddArticles = lodging => {
     const all = getAllKnownArticles();
-    const existing = getLodgingItems(lodging.id).map(i => i.itemName);
+    const existing = getLodgingItems(lodging.id).map(i => i.item_name);
     const checked = {};
     const qtys = {};
-    const m = model(lodging.modelId);
-    // Pre-select all model articles not already in lodging
+    const m = modelById(lodging.model_id);
     Object.values(all).forEach(a => {
-      const inModel = m ? m.inventory.some(i => i.name === a.name) : false;
-      const alreadyHere = existing.includes(a.name);
-      checked[a.id] = (inModel && !alreadyHere) ? true : false;
-      // Use model quantity if available
-      const modelItem = m ? m.inventory.find(i => i.name === a.name) : null;
+      const inModel = m ? (m.inventory || []).some(i => i.name === a.name) : false;
+      checked[a.id] = inModel && !existing.includes(a.name);
+      const modelItem = m ? (m.inventory || []).find(i => i.name === a.name) : null;
       qtys[a.id] = modelItem ? modelItem.qty : a.defaultQty;
     });
-    setForm({
-      lodgingId: lodging.id,
-      lodgingName: lodging.name,
-      allArticles: all,
-      checked,
-      qtys,
-      extraItems: [],
-      newItemName: "",
-      newItemCat: "",
-      newItemQty: 1,
-      showNewCat: false,
-      newCatName: ""
-    });
+    setForm({ lodgingId: lodging.id, lodgingName: lodging.name, allArticles: all, checked, qtys, extraItems: [], newItemName: "", newItemCat: "", newItemQty: 1, showNewCat: false, newCatName: "" });
     setModal({ type: "addArticles" });
   };
 
-  const saveAddArticles = () => {
+  const saveAddArticles = async () => {
     const checked = form.checked || {};
     const qtys = form.qtys || {};
     const all = form.allArticles || {};
-    // Get all checked articles
-    const selectedArticles = Object.values(all).filter(a => checked[a.id] === true);
-    const newItems = selectedArticles.map((a, i) => ({
-      id: Date.now() + i + 1,
-      lodgingId: +form.lodgingId,
-      companyId: cid,
-      itemName: a.name,
-      category: a.category,
-      expectedQty: +(qtys[a.id] || a.defaultQty || 1),
-      actualQty: +(qtys[a.id] || a.defaultQty || 1)
-    }));
-    // New articles created on the fly (via addArticleToForm)
-    const extraItems = (form.extraItems || []).map((item, i) => ({
-      id: Date.now() + 2000 + i,
-      lodgingId: +form.lodgingId,
-      companyId: cid,
-      itemName: item.name,
-      category: item.category,
-      expectedQty: item.qty,
-      actualQty: item.qty
-    }));
-    const allNew = [...newItems, ...extraItems];
-    if (allNew.length === 0) { alert("Aucun article sélectionné !"); return; }
-    setInventoryItems(items => [...items, ...allNew]);
-    addJournal("Inventaire mis à jour", `${form.lodgingName} — ${allNew.length} article(s) ajouté(s)`);
+    const selected = Object.values(all).filter(a => checked[a.id] === true);
+    const extraItems = form.extraItems || [];
+    const rows = [
+      ...selected.map(a => ({ lodging_id: +form.lodgingId, company_id: cid, item_name: a.name, category: a.category, expected_qty: +(qtys[a.id] || a.defaultQty || 1), actual_qty: +(qtys[a.id] || a.defaultQty || 1) })),
+      ...extraItems.map(item => ({ lodging_id: +form.lodgingId, company_id: cid, item_name: item.name, category: item.category, expected_qty: item.qty, actual_qty: item.qty })),
+    ];
+    if (rows.length === 0) { alert("Aucun article sélectionné !"); return; }
+    const { data } = await supabase.from("inventory_items").insert(rows).select();
+    if (data) setInventoryItems(items => [...items, ...data]);
+    addJournal("Inventaire mis à jour", `${form.lodgingName} — ${rows.length} article(s)`);
     setModal(null);
   };
 
@@ -532,75 +568,86 @@ export default function App() {
     if (!form.newItemName) return;
     const cat = form.showNewCat && form.newCatName ? form.newCatName : form.newItemCat || "Divers";
     const newItem = { id: `new_${Date.now()}`, name: form.newItemName, category: cat, defaultQty: +form.newItemQty || 1 };
-    // Add to allArticles so it appears in the list checked
     const newAll = { ...form.allArticles, [newItem.name]: newItem };
     const newChecked = { ...form.checked, [newItem.id]: true };
     const newQtys = { ...form.qtys, [newItem.id]: newItem.defaultQty };
     setForm(f => ({ ...f, allArticles: newAll, checked: newChecked, qtys: newQtys, newItemName: "", newItemQty: 1, showNewCat: false, newCatName: "" }));
   };
 
-  const lodgingModalAddItem = () => {}; // kept for compatibility
-
-  // ── Inventory item update ───────────────────────────────────────────────────
-  const updateActualQty = (itemId, qty) => {
-    setInventoryItems(items => items.map(i => i.id === itemId ? { ...i, actualQty: Math.max(0, +qty) } : i));
-  };
-
   // ── Repairs ─────────────────────────────────────────────────────────────────
   const openRepair = (item, lodging) => {
-    setForm({ itemId: item.id, itemName: item.itemName, lodgingId: lodging.id, lodgingName: lodging.name, destId: lodging.destinationId, qty: 1, repairerId: myRepairers[0]?.id || "", note: "" });
+    setForm({ itemId: item.id, itemName: item.item_name, lodgingId: lodging.id, lodgingName: lodging.name, destId: lodging.destination_id, qty: 1, repairerId: myRepairers[0]?.id || "", note: "" });
     setModal({ type: "repair" });
   };
-  const saveRepair = () => {
+  const saveRepair = async () => {
     if (!form.repairerId || !form.qty) return;
     const qty = +form.qty;
     const repairer = myRepairers.find(r => r.id === +form.repairerId);
-    setInventoryItems(items => items.map(i => i.id === +form.itemId ? { ...i, actualQty: Math.max(0, i.actualQty - qty) } : i));
-    const r = { id: Date.now(), companyId: cid, itemId: +form.itemId, itemName: form.itemName, lodgingId: +form.lodgingId, lodgingName: form.lodgingName, destId: +form.destId, qty, repairerId: +form.repairerId, repairer: repairer?.name || "", note: form.note || "", status: "En réparation", dateOut: new Date().toISOString().slice(0, 10), dateBack: null, returnedTo: null };
-    setRepairs(rs => [r, ...rs]);
+    await supabase.from("inventory_items").update({ actual_qty: Math.max(0, inventoryItems.find(i => i.id === +form.itemId)?.actual_qty - qty) }).eq("id", +form.itemId);
+    setInventoryItems(items => items.map(i => i.id === +form.itemId ? { ...i, actual_qty: Math.max(0, i.actual_qty - qty) } : i));
+    const row = { company_id: cid, item_id: +form.itemId, item_name: form.itemName, lodging_id: +form.lodgingId, lodging_name: form.lodgingName, dest_id: +form.destId, qty, repairer_id: +form.repairerId, repairer: repairer?.name || "", note: form.note || "", status: "En réparation", date_out: new Date().toISOString().slice(0, 10) };
+    const { data } = await supabase.from("repairs").insert(row).select().single();
+    if (data) setRepairs(rs => [data, ...rs]);
     addJournal("Envoi en réparation", `${qty} × ${form.itemName} → ${repairer?.name}`);
-    addNotif(`🔧 ${qty} × ${form.itemName} envoyé en réparation chez ${repairer?.name} (depuis ${form.lodgingName})`);
+    addNotif(`🔧 ${qty} × ${form.itemName} en réparation chez ${repairer?.name} (depuis ${form.lodgingName})`);
     setModal(null);
   };
 
-  const openReturnRepair = r => { setForm({ repairId: r.id, returnTo: r.lodgingId, status: "Réparé", note: "" }); setModal({ type: "returnRepair", repair: r }); };
-  const saveReturnRepair = () => {
+  const openReturnRepair = r => { setForm({ repairId: r.id, returnTo: r.lodging_id, status: "Réparé", note: "" }); setModal({ type: "returnRepair", repair: r }); };
+  const saveReturnRepair = async () => {
     const r = repairs.find(x => x.id === +form.repairId);
     if (!r) return;
     const newStatus = form.status;
     if (newStatus === "Réparé" && form.returnTo) {
-      setInventoryItems(items => items.map(i => i.lodgingId === +form.returnTo && i.itemName === r.itemName ? { ...i, actualQty: i.actualQty + r.qty } : i));
+      const inv = inventoryItems.find(i => i.lodging_id === +form.returnTo && i.item_name === r.item_name);
+      if (inv) {
+        await supabase.from("inventory_items").update({ actual_qty: inv.actual_qty + r.qty }).eq("id", inv.id);
+        setInventoryItems(items => items.map(i => i.id === inv.id ? { ...i, actual_qty: i.actual_qty + r.qty } : i));
+      }
     }
-    setRepairs(rs => rs.map(x => x.id === r.id ? { ...x, status: newStatus, dateBack: new Date().toISOString().slice(0, 10), returnedTo: +form.returnTo || null, returnNote: form.note } : x));
-    addJournal(`Réparation ${newStatus.toLowerCase()}`, `${r.qty} × ${r.itemName}`);
-    if (newStatus === "Hors service") addNotif(`💀 ${r.qty} × ${r.itemName} déclaré hors service — à remplacer`);
+    const updates = { status: newStatus, date_back: new Date().toISOString().slice(0, 10), returned_to: +form.returnTo || null, return_note: form.note };
+    await supabase.from("repairs").update(updates).eq("id", r.id);
+    setRepairs(rs => rs.map(x => x.id === r.id ? { ...x, ...updates } : x));
+    addJournal(`Réparation ${newStatus.toLowerCase()}`, `${r.qty} × ${r.item_name}`);
     setModal(null);
   };
 
-  // ── Repairers CRUD ──────────────────────────────────────────────────────────
+  // ── Repairers ───────────────────────────────────────────────────────────────
   const openAddRepairer = () => { setForm({ name: "", phone: "", email: "", address: "" }); setModal({ type: "repairer" }); };
   const openEditRepairer = r => { setForm({ ...r }); setModal({ type: "repairer", id: r.id }); };
-  const saveRepairer = () => {
+  const saveRepairer = async () => {
     if (!form.name) return;
-    const d = { ...form, id: modal.id || Date.now(), companyId: cid };
-    setRepairers(rs => modal.id ? rs.map(r => r.id === modal.id ? d : r) : [...rs, d]);
+    const row = { company_id: cid, name: form.name, phone: form.phone || "", email: form.email || "", address: form.address || "" };
+    if (modal.id) {
+      const { data } = await supabase.from("repairers").update(row).eq("id", modal.id).select().single();
+      if (data) setRepairers(rs => rs.map(r => r.id === modal.id ? data : r));
+    } else {
+      const { data } = await supabase.from("repairers").insert(row).select().single();
+      if (data) setRepairers(rs => [...rs, data]);
+    }
     addJournal(modal.id ? "Réparateur modifié" : "Réparateur créé", form.name);
     setModal(null);
   };
 
-  // ── Users CRUD ──────────────────────────────────────────────────────────────
-  const openAddUser = () => { setForm({ name: "", email: "", phone: "", role: "Invité", destinationId: "", seePrice: false, password: "1234" }); setModal({ type: "user" }); };
+  // ── Users ───────────────────────────────────────────────────────────────────
+  const openAddUser = () => { setForm({ name: "", email: "", phone: "", role: "Invité", destination_id: "", see_price: false, password: "1234" }); setModal({ type: "user" }); };
   const openEditUser = u => { setForm({ ...u }); setModal({ type: "user", id: u.id }); };
-  const saveUser = () => {
+  const saveUser = async () => {
     if (!form.name) return;
-    const d = { ...form, id: modal.id || Date.now(), companyId: cid, seePrice: !!(form.seePrice === true || form.seePrice === "true"), destinationId: form.destinationId ? +form.destinationId : null };
-    setUsers(us => modal.id ? us.map(u => u.id === modal.id ? d : u) : [...us, d]);
-    if (modal.id && currentUser.id === modal.id) setCurrentUser(d);
+    const row = { company_id: cid, name: form.name, email: form.email || "", phone: form.phone || "", role: form.role, destination_id: form.destination_id ? +form.destination_id : null, see_price: !!(form.see_price === true || form.see_price === "true"), password: form.password || "1234" };
+    if (modal.id) {
+      const { data } = await supabase.from("users").update(row).eq("id", modal.id).select().single();
+      if (data) { setUsers(us => us.map(u => u.id === modal.id ? data : u)); if (currentUser.id === modal.id) setCurrentUser(data); }
+    } else {
+      const { data } = await supabase.from("users").insert(row).select().single();
+      if (data) setUsers(us => [...us, data]);
+    }
     addJournal(modal.id ? "Utilisateur modifié" : "Utilisateur créé", form.name);
     setModal(null);
   };
 
-  // ── Nav ─────────────────────────────────────────────────────────────────────
+  const repairStatusColor = s => ({ "En réparation": C.amber, "Réparé": C.green, "Hors service": C.red }[s] || C.muted);
+
   const activeRepairs = myRepairs.filter(r => r.status === "En réparation").length;
   const navItems = [
     { id: "dashboard", label: "Accueil", icon: ic.home },
@@ -612,6 +659,17 @@ export default function App() {
     ...(isAdmin ? [{ id: "journal", label: "Journal", icon: ic.journal }] : []),
   ];
 
+  if (loading) return (
+    <div style={{ minHeight: "100vh", background: C.bg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ fontSize: 48, marginBottom: 16 }}>⛺</div>
+      <div style={{ fontWeight: 800, fontSize: 20, color: C.text, marginBottom: 8 }}>Oh! Campings</div>
+      <Spinner />
+      <div style={{ color: C.muted, fontSize: 14, marginTop: 8 }}>Chargement des données…</div>
+    </div>
+  );
+
+  if (!currentUser) return <LoginScreen users={users} onLogin={handleLogin} />;
+
   const sidebarStyle = {
     width: 230, background: C.surface, borderRight: `1px solid ${C.border}`,
     display: "flex", flexDirection: "column", padding: "24px 0",
@@ -619,8 +677,6 @@ export default function App() {
     transition: "transform 0.25s ease",
     transform: isMobile ? (sideOpen ? "translateX(0)" : "translateX(-100%)") : "translateX(0)",
   };
-
-  const repairStatusColor = s => ({ "En réparation": C.amber, "Réparé": C.green, "Hors service": C.red }[s] || C.muted);
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", fontFamily: "'Inter', system-ui, sans-serif", background: C.bg, color: C.text }}>
@@ -649,8 +705,8 @@ export default function App() {
             <div style={{ width: 32, height: 32, borderRadius: "50%", background: C.tealDim, border: `2px solid ${C.teal}`, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, color: C.teal, fontSize: 14 }}>{currentUser.name[0]}</div>
             <div><div style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{currentUser.name}</div><Badge label={currentUser.role} color={ROLE_COLORS[currentUser.role]} /></div>
           </div>
-          {isInvite && currentUser.destinationId && <div style={{ background: C.tealDim, border: `1px solid ${C.teal}33`, borderRadius: 8, padding: "6px 10px", fontSize: 12, color: C.teal, marginBottom: 8 }}>📍 {dest(currentUser.destinationId)?.name}</div>}
-          <button onClick={() => { setCurrentUser(null); setTab("dashboard"); }} style={{ background: "none", border: `1px solid ${C.border}`, borderRadius: 8, cursor: "pointer", color: C.muted, padding: "6px 12px", fontSize: 12, width: "100%" }}>Se déconnecter</button>
+          {isInvite && currentUser.destination_id && <div style={{ background: C.tealDim, border: `1px solid ${C.teal}33`, borderRadius: 8, padding: "6px 10px", fontSize: 12, color: C.teal, marginBottom: 8 }}>📍 {dest(currentUser.destination_id)?.name}</div>}
+          <button onClick={() => { setCurrentUser(null); setTab("dashboard"); setUsers([]); }} style={{ background: "none", border: `1px solid ${C.border}`, borderRadius: 8, cursor: "pointer", color: C.muted, padding: "6px 12px", fontSize: 12, width: "100%" }}>Se déconnecter</button>
         </div>
       </div>
 
@@ -672,16 +728,19 @@ export default function App() {
               <div style={{ position: "absolute", right: 0, top: 40, width: 300, background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, zIndex: 200, maxHeight: 380, overflowY: "auto", boxShadow: "0 8px 32px #00000022" }}>
                 <div style={{ padding: "12px 16px", borderBottom: `1px solid ${C.border}`, display: "flex", justifyContent: "space-between" }}>
                   <span style={{ fontWeight: 700, fontSize: 14 }}>Notifications</span>
-                  <button onClick={() => setNotifications(n => n.map(x => x.userId === currentUser.id ? { ...x, read: true } : x))} style={{ background: "none", border: "none", cursor: "pointer", color: C.teal, fontSize: 12 }}>Tout lire</button>
+                  <button onClick={async () => {
+                    await supabase.from("notifications").update({ read: true }).eq("user_id", currentUser.id);
+                    setNotifications(n => n.map(x => x.user_id === currentUser.id ? { ...x, read: true } : x));
+                  }} style={{ background: "none", border: "none", cursor: "pointer", color: C.teal, fontSize: 12 }}>Tout lire</button>
                 </div>
                 {myNotifs.length === 0 && <div style={{ padding: 20, textAlign: "center", color: C.muted, fontSize: 13 }}>Aucune notification</div>}
                 {myNotifs.map(n => (
-                  <div key={n.id} style={{ padding: "12px 16px", borderBottom: `1px solid ${C.border}`, background: n.read ? "transparent" : C.tealDim, display: "flex", gap: 8 }}>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 13, color: C.text }}>{n.msg}</div>
+                  <div key={n.id} style={{ padding: "12px 16px", borderBottom: `1px solid ${C.border}`, background: n.read ? "transparent" : C.tealDim, display: "flex", gap: 8, alignItems: "flex-start" }}>
+                    <div style={{ flex: 1 }} onClick={async () => { await supabase.from("notifications").update({ read: true }).eq("id", n.id); setNotifications(ns => ns.map(x => x.id === n.id ? { ...x, read: true } : x)); setShowNotifs(false); }}>
+                      <div style={{ fontSize: 13, color: C.text, cursor: "pointer" }}>{n.msg}</div>
                       <div style={{ fontSize: 11, color: C.muted, marginTop: 3 }}>{n.date}</div>
                     </div>
-                    <button onClick={e => { e.stopPropagation(); setNotifications(ns => ns.filter(x => x.id !== n.id)); }} style={{ background: "none", border: "none", cursor: "pointer", color: C.muted, fontSize: 18, padding: "0 4px", flexShrink: 0 }}>✕</button>
+                    <button onClick={async e => { e.stopPropagation(); await supabase.from("notifications").delete().eq("id", n.id); setNotifications(ns => ns.filter(x => x.id !== n.id)); }} style={{ background: "none", border: "none", cursor: "pointer", color: C.muted, fontSize: 18, padding: "0 4px", flexShrink: 0 }}>✕</button>
                   </div>
                 ))}
               </div>
@@ -695,11 +754,11 @@ export default function App() {
           {tab === "dashboard" && (
             <div>
               <h1 style={{ margin: "0 0 4px", fontSize: 22, fontWeight: 800 }}>Bonjour, {currentUser.name.split(" ")[0]} 👋</h1>
-              <p style={{ margin: "0 0 20px", color: C.muted, fontSize: 13 }}>{isInvite && currentUser.destinationId ? `Destination : ${dest(currentUser.destinationId)?.name}` : "Vue d'ensemble"}</p>
+              <p style={{ margin: "0 0 20px", color: C.muted, fontSize: 13 }}>{isInvite && currentUser.destination_id ? `Destination : ${dest(currentUser.destination_id)?.name}` : "Vue d'ensemble"}</p>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 20 }}>
                 {[
                   { label: "Destinations →", value: visibleDests.length, color: C.teal, tab: "destinations" },
-                  { label: "Logements", value: myLodgings.filter(l => visibleDests.some(d => d.id === l.destinationId)).length, color: C.purple },
+                  { label: "Logements", value: myLodgings.filter(l => visibleDests.some(d => d.id === l.destination_id)).length, color: C.purple },
                   { label: "En réparation", value: activeRepairs, color: activeRepairs > 0 ? C.red : C.muted, tab: "repairs" },
                   { label: "Hors service", value: myRepairs.filter(r => r.status === "Hors service").length, color: C.red },
                 ].map((s, i) => (
@@ -709,21 +768,9 @@ export default function App() {
                   </div>
                 ))}
               </div>
-
-              {activeRepairs > 0 && (
-                <div style={{ background: C.amber + "15", border: `1px solid ${C.amber}44`, borderRadius: 12, padding: "14px 16px", marginBottom: 16 }}>
-                  <div style={{ fontWeight: 700, color: C.amber, marginBottom: 8 }}>🔧 Articles en réparation</div>
-                  {myRepairs.filter(r => r.status === "En réparation").slice(0, 3).map(r => (
-                    <div key={r.id} style={{ fontSize: 13, padding: "4px 0", borderBottom: `1px solid ${C.amber}22`, display: "flex", justifyContent: "space-between" }}>
-                      <span>{r.qty} × {r.itemName}</span><span style={{ color: C.amber }}>{r.repairer}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-
               <h2 style={{ fontSize: 15, fontWeight: 700, margin: "0 0 12px" }}>Mes destinations</h2>
               {visibleDests.map(d => {
-                const dLodgings = myLodgings.filter(l => l.destinationId === d.id);
+                const dLodgings = myLodgings.filter(l => l.destination_id === d.id);
                 const missing = getMissingCount(d.id);
                 return (
                   <div key={d.id} onClick={() => { setSelectedDest(d); goTo("destinations"); }} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 16, marginBottom: 10, cursor: "pointer", boxShadow: "0 2px 8px #00000008" }}>
@@ -745,7 +792,7 @@ export default function App() {
                 {isAdmin && <Btn onClick={openAddDest}><Ic d={ic.plus} size={14} /> Ajouter</Btn>}
               </div>
               {visibleDests.map(d => {
-                const dLodgings = myLodgings.filter(l => l.destinationId === d.id);
+                const dLodgings = myLodgings.filter(l => l.destination_id === d.id);
                 const missing = getMissingCount(d.id);
                 const summary = getDestSummary(d.id);
                 const missingItems = Object.entries(summary).filter(([, v]) => v.actual < v.expected);
@@ -755,25 +802,24 @@ export default function App() {
                       <div>
                         <div style={{ fontWeight: 800, fontSize: 18 }}>⛺ {d.name} <span style={{ fontSize: 12, color: C.muted, fontWeight: 400 }}>→ voir</span></div>
                         <div style={{ fontSize: 13, color: C.muted }}>📍 {d.city}{d.address ? ` — ${d.address}` : ""}</div>
-                        <div style={{ fontSize: 13, color: C.muted }}>Gérant : {usr(d.managerId)?.name || "Non assigné"}</div>
+                        <div style={{ fontSize: 13, color: C.muted }}>Gérant : {usr(d.manager_id)?.name || "Non assigné"}</div>
                       </div>
                       {isAdmin && <div style={{ display: "flex", gap: 6 }} onClick={e => e.stopPropagation()}>
                         <button onClick={() => { setForm({ ...d }); setModal({ type: "dest", id: d.id }); }} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, cursor: "pointer", color: C.muted, padding: "6px 9px" }}><Ic d={ic.edit} size={14} /></button>
-                        <button onClick={() => askConfirm("Supprimer cette destination ?", () => setDestinations(ds => ds.filter(x => x.id !== d.id)))} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, cursor: "pointer", color: C.red, padding: "6px 9px" }}><Ic d={ic.trash} size={14} /></button>
+                        <button onClick={() => askConfirm("Supprimer cette destination ?", async () => { await supabase.from("destinations").delete().eq("id", d.id); setDestinations(ds => ds.filter(x => x.id !== d.id)); })} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, cursor: "pointer", color: C.red, padding: "6px 9px" }}><Ic d={ic.trash} size={14} /></button>
                       </div>}
                     </div>
                     <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
                       <div style={{ flex: 1, minWidth: 80, background: C.surface, borderRadius: 10, padding: "10px 14px" }}><div style={{ fontSize: 22, fontWeight: 800, color: C.teal }}>{dLodgings.length}</div><div style={{ fontSize: 11, color: C.muted }}>logements</div></div>
-                      <div style={{ flex: 1, minWidth: 80, background: C.surface, borderRadius: 10, padding: "10px 14px" }}><div style={{ fontSize: 22, fontWeight: 800, color: missing > 0 ? C.red : C.green }}>{missing}</div><div style={{ fontSize: 11, color: C.muted }}>articles manquants</div></div>
-                      <div style={{ flex: 1, minWidth: 80, background: C.surface, borderRadius: 10, padding: "10px 14px" }}><div style={{ fontSize: 22, fontWeight: 800, color: C.amber }}>{myRepairs.filter(r => r.destId === d.id && r.status === "En réparation").length}</div><div style={{ fontSize: 11, color: C.muted }}>en réparation</div></div>
+                      <div style={{ flex: 1, minWidth: 80, background: C.surface, borderRadius: 10, padding: "10px 14px" }}><div style={{ fontSize: 22, fontWeight: 800, color: missing > 0 ? C.red : C.green }}>{missing}</div><div style={{ fontSize: 11, color: C.muted }}>manquants</div></div>
+                      <div style={{ flex: 1, minWidth: 80, background: C.surface, borderRadius: 10, padding: "10px 14px" }}><div style={{ fontSize: 22, fontWeight: 800, color: C.amber }}>{myRepairs.filter(r => r.dest_id === d.id && r.status === "En réparation").length}</div><div style={{ fontSize: 11, color: C.muted }}>en réparation</div></div>
                     </div>
                     {missingItems.length > 0 && (
                       <div style={{ background: C.red + "10", border: `1px solid ${C.red}33`, borderRadius: 10, padding: "10px 14px" }}>
-                        <div style={{ fontWeight: 700, fontSize: 13, color: C.red, marginBottom: 6 }}>Articles manquants sur la destination :</div>
+                        <div style={{ fontWeight: 700, fontSize: 13, color: C.red, marginBottom: 6 }}>Articles manquants :</div>
                         {missingItems.slice(0, 5).map(([name, v]) => (
                           <div key={name} style={{ fontSize: 13, display: "flex", justifyContent: "space-between", padding: "3px 0", borderBottom: `1px solid ${C.red}22` }}>
-                            <span>{name}</span>
-                            <span style={{ color: C.red, fontWeight: 700 }}>{v.actual}/{v.expected} <span style={{ color: C.red }}>(-{v.expected - v.actual})</span></span>
+                            <span>{name}</span><span style={{ color: C.red, fontWeight: 700 }}>{v.actual}/{v.expected} (-{v.expected - v.actual})</span>
                           </div>
                         ))}
                         {missingItems.length > 5 && <div style={{ fontSize: 12, color: C.muted, marginTop: 4 }}>+ {missingItems.length - 5} autres…</div>}
@@ -796,48 +842,34 @@ export default function App() {
                 </div>
                 <Btn small onClick={() => openAddLodging(selectedDest.id)}><Ic d={ic.plus} size={13} /> Logement</Btn>
               </div>
-
-              {/* Destination summary */}
               {(() => {
                 const summary = getDestSummary(selectedDest.id);
                 const missing = Object.entries(summary).filter(([, v]) => v.actual < v.expected);
                 if (missing.length === 0) return null;
                 return (
                   <div style={{ background: C.red + "10", border: `1px solid ${C.red}33`, borderRadius: 12, padding: "14px 16px", marginBottom: 16 }}>
-                    <div style={{ fontWeight: 700, color: C.red, marginBottom: 8 }}>📊 Récapitulatif manquants — {selectedDest.name}</div>
+                    <div style={{ fontWeight: 700, color: C.red, marginBottom: 8 }}>📊 Récapitulatif manquants</div>
                     {missing.map(([name, v]) => (
                       <div key={name} style={{ fontSize: 13, display: "flex", justifyContent: "space-between", padding: "4px 0", borderBottom: `1px solid ${C.red}22` }}>
-                        <span>{name}</span>
-                        <span style={{ color: C.red, fontWeight: 700 }}>{v.actual}/{v.expected} (-{v.expected - v.actual})</span>
+                        <span>{name}</span><span style={{ color: C.red, fontWeight: 700 }}>{v.actual}/{v.expected} (-{v.expected - v.actual})</span>
                       </div>
                     ))}
                   </div>
                 );
               })()}
-
-              {/* Lodgings list */}
-              {myLodgings.filter(l => l.destinationId === selectedDest.id).map(l => {
+              {myLodgings.filter(l => l.destination_id === selectedDest.id).map(l => {
                 const missing = getLodgingMissing(l.id);
-                const m = model(l.modelId);
+                const m = modelById(l.model_id);
                 return (
                   <div key={l.id} onClick={() => setSelectedLodging(l)} style={{ background: C.card, border: `1px solid ${missing > 0 ? C.red + "55" : C.border}`, borderRadius: 14, padding: 16, marginBottom: 10, cursor: "pointer", boxShadow: "0 2px 8px #00000008" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <div>
-                        <div style={{ fontWeight: 700, fontSize: 15 }}>🏠 {l.name}</div>
-                        <div style={{ fontSize: 12, color: C.muted }}>{m?.name || "—"} · voir inventaire →</div>
-                      </div>
-                      <div style={{ textAlign: "right" }}>
-                        {missing > 0
-                          ? <Badge label={`-${missing} manquants`} color={C.red} />
-                          : <Badge label="✅ Complet" color={C.green} />}
-                      </div>
+                      <div><div style={{ fontWeight: 700, fontSize: 15 }}>🏠 {l.name}</div><div style={{ fontSize: 12, color: C.muted }}>{m?.name || "—"} · voir inventaire →</div></div>
+                      {missing > 0 ? <Badge label={`-${missing} manquants`} color={C.red} /> : <Badge label="✅ Complet" color={C.green} />}
                     </div>
                   </div>
                 );
               })}
-              {myLodgings.filter(l => l.destinationId === selectedDest.id).length === 0 && (
-                <div style={{ textAlign: "center", color: C.muted, padding: 40 }}>Aucun logement. Ajoutez-en un !</div>
-              )}
+              {myLodgings.filter(l => l.destination_id === selectedDest.id).length === 0 && <div style={{ textAlign: "center", color: C.muted, padding: 40 }}>Aucun logement. Ajoutez-en un !</div>}
             </div>
           )}
 
@@ -848,65 +880,61 @@ export default function App() {
                 <button onClick={() => setSelectedLodging(null)} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, cursor: "pointer", color: C.muted, padding: "8px 10px", display: "flex" }}><Ic d={ic.back} size={16} /></button>
                 <div style={{ flex: 1 }}>
                   <h1 style={{ margin: 0, fontSize: 20, fontWeight: 800 }}>🏠 {selectedLodging.name}</h1>
-                  <p style={{ margin: 0, color: C.muted, fontSize: 13 }}>{selectedDest.name} · {model(selectedLodging.modelId)?.name}</p>
+                  <p style={{ margin: 0, color: C.muted, fontSize: 13 }}>{selectedDest.name} · {modelById(selectedLodging.model_id)?.name}</p>
                 </div>
               </div>
-
-              {/* Group items by category */}
               {getLodgingItems(selectedLodging.id).length === 0 ? (
                 <div style={{ textAlign: "center", padding: "40px 20px", background: C.card, borderRadius: 14, border: `2px dashed ${C.teal}55` }}>
                   <div style={{ fontSize: 40, marginBottom: 12 }}>📦</div>
                   <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 8 }}>Inventaire vide</div>
-                  <div style={{ color: C.muted, fontSize: 14, marginBottom: 20 }}>Cliquez sur le bouton ci-dessous pour ajouter les articles depuis la liste des articles existants.</div>
+                  <div style={{ color: C.muted, fontSize: 14, marginBottom: 20 }}>Ajoutez des articles depuis la liste existante.</div>
                   <Btn onClick={() => openAddArticles(selectedLodging)}><Ic d={ic.plus} size={14} /> Ajouter des articles</Btn>
                 </div>
               ) : (
-              <>{(() => {
-                const items = getLodgingItems(selectedLodging.id);
-                const cats = [...new Set(items.map(i => i.category))];
-                return cats.map(cat => {
-                  const catItems = items.filter(i => i.category === cat);
-                  const expanded = expandedCats[cat] !== false;
-                  const catMissing = catItems.reduce((t, i) => t + Math.max(0, i.expectedQty - i.actualQty), 0);
-                  return (
-                    <div key={cat} style={{ marginBottom: 10 }}>
-                      <button onClick={() => setExpandedCats(e => ({ ...e, [cat]: !expanded }))} style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", background: C.surface, border: `1px solid ${C.border}`, borderRadius: expanded ? "10px 10px 0 0" : 10, cursor: "pointer", color: C.text, fontWeight: 700, fontSize: 14 }}>
-                        <span>{cat} {catMissing > 0 && <span style={{ color: C.red, fontWeight: 800 }}>(-{catMissing})</span>}</span>
-                        <span style={{ color: C.muted, transform: expanded ? "rotate(0)" : "rotate(-90deg)", transition: "transform .2s" }}>▾</span>
-                      </button>
-                      {expanded && (
-                        <div style={{ border: `1px solid ${C.border}`, borderTop: "none", borderRadius: "0 0 10px 10px", overflow: "hidden" }}>
-                          {catItems.map(item => {
-                            const missing = Math.max(0, item.expectedQty - item.actualQty);
-                            return (
-                              <div key={item.id} style={{ padding: "12px 14px", borderBottom: `1px solid ${C.border}`, background: missing > 0 ? C.red + "08" : C.card }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                                  <div style={{ flex: 1 }}>
-                                    <div style={{ fontSize: 14, fontWeight: 600 }}>{item.itemName}</div>
-                                    {missing > 0 && <div style={{ fontSize: 12, color: C.red, fontWeight: 700 }}>⚠️ Manque {missing} / {item.expectedQty} attendus</div>}
+                <>
+                  {[...new Set(getLodgingItems(selectedLodging.id).map(i => i.category))].map(cat => {
+                    const catItems = getLodgingItems(selectedLodging.id).filter(i => i.category === cat);
+                    const expanded = expandedCats[cat] !== false;
+                    const catMissing = catItems.reduce((t, i) => t + Math.max(0, i.expected_qty - i.actual_qty), 0);
+                    return (
+                      <div key={cat} style={{ marginBottom: 10 }}>
+                        <button onClick={() => setExpandedCats(e => ({ ...e, [cat]: !expanded }))} style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", background: C.surface, border: `1px solid ${C.border}`, borderRadius: expanded ? "10px 10px 0 0" : 10, cursor: "pointer", color: C.text, fontWeight: 700, fontSize: 14 }}>
+                          <span>{cat} {catMissing > 0 && <span style={{ color: C.red, fontWeight: 800 }}>(-{catMissing})</span>}</span>
+                          <span style={{ color: C.muted, transform: expanded ? "rotate(0)" : "rotate(-90deg)", transition: "transform .2s" }}>▾</span>
+                        </button>
+                        {expanded && (
+                          <div style={{ border: `1px solid ${C.border}`, borderTop: "none", borderRadius: "0 0 10px 10px", overflow: "hidden" }}>
+                            {catItems.map(item => {
+                              const missing = Math.max(0, item.expected_qty - item.actual_qty);
+                              return (
+                                <div key={item.id} style={{ padding: "12px 14px", borderBottom: `1px solid ${C.border}`, background: missing > 0 ? C.red + "08" : C.card }}>
+                                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                    <div style={{ flex: 1 }}>
+                                      <div style={{ fontSize: 14, fontWeight: 600 }}>{item.item_name}</div>
+                                      {missing > 0 && <div style={{ fontSize: 12, color: C.red, fontWeight: 700 }}>⚠️ Manque {missing} / {item.expected_qty} attendus</div>}
+                                    </div>
+                                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                      <button onClick={() => updateActualQty(item.id, item.actual_qty - 1)} style={{ width: 28, height: 28, borderRadius: 6, background: C.red + "22", border: `1px solid ${C.red}44`, cursor: "pointer", color: C.red, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>−</button>
+                                      <input type="number" min="0" value={item.actual_qty} onChange={e => updateActualQty(item.id, e.target.value)} style={{ width: 48, padding: "5px 4px", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, color: C.text, fontSize: 14, fontWeight: 700, outline: "none", textAlign: "center" }} />
+                                      <button onClick={() => updateActualQty(item.id, item.actual_qty + 1)} style={{ width: 28, height: 28, borderRadius: 6, background: C.tealDim, border: `1px solid ${C.teal}44`, cursor: "pointer", color: C.teal, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
+                                      <span style={{ fontSize: 12, color: C.muted, minWidth: 40 }}>/ {item.expected_qty}</span>
+                                    </div>
+                                    <button onClick={() => openRepair(item, selectedLodging)} style={{ background: C.amber + "22", border: `1px solid ${C.amber}44`, borderRadius: 8, cursor: "pointer", color: C.amber, padding: "6px 10px", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>🔧 Rép.</button>
                                   </div>
-                                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                                    <button onClick={() => updateActualQty(item.id, item.actualQty - 1)} style={{ width: 28, height: 28, borderRadius: 6, background: C.red + "22", border: `1px solid ${C.red}44`, cursor: "pointer", color: C.red, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>−</button>
-                                    <input type="number" min="0" value={item.actualQty} onChange={e => updateActualQty(item.id, e.target.value)} style={{ width: 48, padding: "5px 4px", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, color: C.text, fontSize: 14, fontWeight: 700, outline: "none", textAlign: "center" }} />
-                                    <button onClick={() => updateActualQty(item.id, item.actualQty + 1)} style={{ width: 28, height: 28, borderRadius: 6, background: C.tealDim, border: `1px solid ${C.teal}44`, cursor: "pointer", color: C.teal, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
-                                    <span style={{ fontSize: 12, color: C.muted, minWidth: 40 }}>/ {item.expectedQty}</span>
-                                  </div>
-                                  <button onClick={() => openRepair(item, selectedLodging)} style={{ background: C.amber + "22", border: `1px solid ${C.amber}44`, borderRadius: 8, cursor: "pointer", color: C.amber, padding: "6px 10px", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>🔧 Rép.</button>
                                 </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  );
-                });
-              })()}</>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </>
               )}
             </div>
           )}
 
-          {/* ── MODELS ── */}
+          {/* ── LOGEMENTS (Models) ── */}
           {tab === "models" && isAdmin && (
             <div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
@@ -919,11 +947,11 @@ export default function App() {
                     <div>
                       <div style={{ fontWeight: 800, fontSize: 16 }}>🏠 {m.name}</div>
                       {m.description && <div style={{ fontSize: 13, color: C.muted }}>{m.description}</div>}
-                      <div style={{ fontSize: 13, color: C.muted, marginTop: 4 }}>{m.inventory.length} article(s) dans l'inventaire type</div>
+                      <div style={{ fontSize: 13, color: C.muted, marginTop: 4 }}>{(m.inventory || []).length} article(s) dans l'inventaire type</div>
                     </div>
                     <div style={{ display: "flex", gap: 8 }}>
                       <Btn small onClick={() => openEditModel(m)}>Modifier</Btn>
-                      <button onClick={() => askConfirm(`Supprimer le modèle "${m.name}" ?`, () => setLodgingModels(ms => ms.filter(x => x.id !== m.id)))} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, cursor: "pointer", color: C.red, padding: "6px 9px" }}><Ic d={ic.trash} size={14} /></button>
+                      <button onClick={() => askConfirm(`Supprimer "${m.name}" ?`, async () => { await supabase.from("lodging_models").delete().eq("id", m.id); setLodgingModels(ms => ms.filter(x => x.id !== m.id)); })} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, cursor: "pointer", color: C.red, padding: "6px 9px" }}><Ic d={ic.trash} size={14} /></button>
                     </div>
                   </div>
                 </div>
@@ -936,25 +964,18 @@ export default function App() {
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
                 <button onClick={() => goTo("models")} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, cursor: "pointer", color: C.muted, padding: "8px 10px", display: "flex" }}><Ic d={ic.back} size={16} /></button>
-                <div><h1 style={{ margin: 0, fontSize: 20, fontWeight: 800 }}>🏠 {selectedModel.name}</h1><p style={{ margin: 0, color: C.muted, fontSize: 13 }}>Inventaire type · {selectedModel.inventory.length} articles</p></div>
+                <div><h1 style={{ margin: 0, fontSize: 20, fontWeight: 800 }}>🏠 {selectedModel.name}</h1><p style={{ margin: 0, color: C.muted, fontSize: 13 }}>Inventaire type · {(selectedModel.inventory || []).length} articles</p></div>
               </div>
-
-              {/* Add item */}
               {isGerant && (
                 <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16, marginBottom: 16 }}>
-                  <div style={{ fontWeight: 700, marginBottom: 4 }}>Ajouter des articles existants</div>
-                  <p style={{ fontSize: 13, color: C.muted, margin: "0 0 12px" }}>Cochez les articles à ajouter à ce type de logement.</p>
-
-                  {/* Liste des articles existants connus */}
+                  <div style={{ fontWeight: 700, marginBottom: 4 }}>Ajouter des articles</div>
+                  <p style={{ fontSize: 13, color: C.muted, margin: "0 0 12px" }}>Cochez les articles à ajouter à ce type.</p>
                   {(() => {
                     const all = getAllKnownArticles();
-                    const allList = Object.values(all);
-                    const alreadyIn = selectedModel.inventory.map(i => i.name);
-                    const available = allList.filter(a => !alreadyIn.includes(a.name));
+                    const alreadyIn = (selectedModel.inventory || []).map(i => i.name);
+                    const available = Object.values(all).filter(a => !alreadyIn.includes(a.name));
                     const cats = [...new Set(available.map(a => a.category))];
-                    if (available.length === 0) return (
-                      <p style={{ fontSize: 13, color: C.muted, fontStyle: "italic" }}>Tous les articles connus sont déjà dans ce modèle.</p>
-                    );
+                    if (available.length === 0) return <p style={{ fontSize: 13, color: C.muted, fontStyle: "italic" }}>Tous les articles connus sont déjà dans ce modèle.</p>;
                     return (
                       <>
                         <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
@@ -968,49 +989,43 @@ export default function App() {
                               const isChecked = !!(form.modelPickChecked?.[art.id]);
                               const qty = form.modelPickQtys?.[art.id] ?? art.defaultQty;
                               return (
-                                <div key={art.id}
-                                  style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 4px", borderBottom: `1px solid ${C.border}`, background: isChecked ? C.tealDim : "transparent" }}>
-                                  <div onClick={() => setForm(f => ({ ...f, modelPickChecked: { ...f.modelPickChecked, [art.id]: !isChecked } }))}
-                                    style={{ width: 20, height: 20, borderRadius: 5, border: `2px solid ${isChecked ? C.teal : C.border}`, background: isChecked ? C.teal : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, cursor: "pointer" }}>
+                                <div key={art.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 4px", borderBottom: `1px solid ${C.border}`, background: isChecked ? C.tealDim : "transparent" }}>
+                                  <div onClick={() => setForm(f => ({ ...f, modelPickChecked: { ...f.modelPickChecked, [art.id]: !isChecked } }))} style={{ width: 20, height: 20, borderRadius: 5, border: `2px solid ${isChecked ? C.teal : C.border}`, background: isChecked ? C.teal : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, cursor: "pointer" }}>
                                     {isChecked && <span style={{ color: "#fff", fontSize: 12, fontWeight: 800 }}>✓</span>}
                                   </div>
                                   <span style={{ flex: 1, fontSize: 13, color: isChecked ? C.text : C.muted }}>{art.name}</span>
-                                  <input type="number" min="1" value={qty} onChange={e => setForm(f => ({ ...f, modelPickQtys: { ...f.modelPickQtys, [art.id]: +e.target.value } }))}
-                                    style={{ width: 48, padding: "4px 4px", background: C.card, border: `1px solid ${C.border}`, borderRadius: 7, color: C.text, fontSize: 13, fontWeight: 700, outline: "none", textAlign: "center" }} />
+                                  <input type="number" min="1" value={qty} onChange={e => setForm(f => ({ ...f, modelPickQtys: { ...f.modelPickQtys, [art.id]: +e.target.value } }))} style={{ width: 48, padding: "4px 4px", background: C.card, border: `1px solid ${C.border}`, borderRadius: 7, color: C.text, fontSize: 13, fontWeight: 700, outline: "none", textAlign: "center" }} />
                                 </div>
                               );
                             })}
                           </div>
                         ))}
                         {Object.values(form.modelPickChecked || {}).some(Boolean) && (
-                          <Btn small onClick={() => {
+                          <Btn small onClick={async () => {
                             const all2 = getAllKnownArticles();
                             const toAdd = Object.entries(form.modelPickChecked || {}).filter(([, v]) => v).map(([id]) => Object.values(all2).find(a => a.id === id)).filter(Boolean);
-                            const affectedLodgings = myLodgings.filter(l => l.modelId === selectedModel.id);
-                            toAdd.forEach(art => {
+                            const affected = myLodgings.filter(l => l.model_id === selectedModel.id);
+                            let newInventory = [...(selectedModel.inventory || [])];
+                            for (const art of toAdd) {
                               const qty = form.modelPickQtys?.[art.id] ?? art.defaultQty;
                               const newItem = { id: Date.now() + Math.random(), category: art.category, name: art.name, qty };
-                              setLodgingModels(ms => ms.map(m => m.id === selectedModel.id ? { ...m, inventory: [...m.inventory, newItem] } : m));
-                              setSelectedModel(prev => ({ ...prev, inventory: [...prev.inventory, newItem] }));
-                              // Add to all lodgings of this model with actualQty: 0
-                              const newInvItems = affectedLodgings.map((l, i) => ({
-                                id: Date.now() + Math.random() + i, lodgingId: l.id, companyId: cid,
-                                itemName: art.name, category: art.category,
-                                expectedQty: qty, actualQty: 0
-                              }));
-                              if (newInvItems.length > 0) setInventoryItems(items => [...items, ...newInvItems]);
-                            });
+                              newInventory = [...newInventory, newItem];
+                              for (const l of affected) {
+                                const invRow = { lodging_id: l.id, company_id: cid, item_name: art.name, category: art.category, expected_qty: qty, actual_qty: 0 };
+                                const { data: inv } = await supabase.from("inventory_items").insert(invRow).select().single();
+                                if (inv) setInventoryItems(items => [...items, inv]);
+                              }
+                            }
+                            await supabase.from("lodging_models").update({ inventory: newInventory }).eq("id", selectedModel.id);
+                            setLodgingModels(ms => ms.map(m => m.id === selectedModel.id ? { ...m, inventory: newInventory } : m));
+                            setSelectedModel(prev => ({ ...prev, inventory: newInventory }));
                             setForm(f => ({ ...f, modelPickChecked: {}, modelPickQtys: {} }));
                           }} style={{ marginTop: 10 }}>✓ Ajouter la sélection</Btn>
                         )}
                       </>
                     );
                   })()}
-
-                  {/* Séparateur */}
                   <div style={{ borderTop: `1px solid ${C.border}`, margin: "16px 0" }} />
-
-                  {/* Créer un nouvel article */}
                   <div style={{ fontWeight: 700, marginBottom: 10, fontSize: 14 }}>➕ Créer un nouvel article</div>
                   <div style={{ marginBottom: 10 }}>
                     <label style={{ display: "block", fontSize: 11, color: C.muted, marginBottom: 5, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase" }}>Catégorie</label>
@@ -1018,13 +1033,13 @@ export default function App() {
                       <div style={{ display: "flex", gap: 6 }}>
                         <select value={form.itemCat || ""} onChange={ff("itemCat")} style={{ flex: 1, padding: "9px 10px", background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, color: C.text, fontSize: 13, outline: "none" }}>
                           <option value="">— Choisir —</option>
-                          {[...new Set([...selectedModel.inventory.map(i => i.category), ...Object.values(getAllKnownArticles()).map(a => a.category)])].filter(Boolean).map(c => <option key={c}>{c}</option>)}
+                          {[...new Set([...(selectedModel.inventory || []).map(i => i.category), ...Object.values(getAllKnownArticles()).map(a => a.category)])].filter(Boolean).map(c => <option key={c}>{c}</option>)}
                         </select>
                         <button onClick={() => setForm(f => ({ ...f, showNewModelCat: true }))} style={{ background: C.tealDim, border: `1px solid ${C.teal}44`, borderRadius: 8, cursor: "pointer", color: C.teal, padding: "0 10px", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>+ Nouvelle</button>
                       </div>
                     ) : (
                       <div style={{ display: "flex", gap: 6 }}>
-                        <input value={form.newModelCatName || ""} onChange={ff("newModelCatName")} placeholder="Nom de la nouvelle catégorie" style={{ flex: 1, padding: "9px 10px", background: C.card, border: `1px solid ${C.teal}`, borderRadius: 8, color: C.text, fontSize: 13, outline: "none" }} />
+                        <input value={form.newModelCatName || ""} onChange={ff("newModelCatName")} placeholder="Nom de la catégorie" style={{ flex: 1, padding: "9px 10px", background: C.card, border: `1px solid ${C.teal}`, borderRadius: 8, color: C.text, fontSize: 13, outline: "none" }} />
                         <button onClick={() => setForm(f => ({ ...f, showNewModelCat: false, newModelCatName: "" }))} style={{ background: "none", border: `1px solid ${C.border}`, borderRadius: 8, cursor: "pointer", color: C.muted, padding: "0 10px" }}>✕</button>
                       </div>
                     )}
@@ -1036,32 +1051,25 @@ export default function App() {
                   <Btn small onClick={addModelItem}><Ic d={ic.plus} size={13} /> Créer et ajouter</Btn>
                 </div>
               )}
-
-              {/* Items grouped by category */}
-              {(() => {
-                const cats = [...new Set(selectedModel.inventory.map(i => i.category))];
-                return cats.map(cat => {
-                  const catItems = selectedModel.inventory.filter(i => i.category === cat);
-                  return (
-                    <div key={cat} style={{ marginBottom: 12 }}>
-                      <div style={{ fontWeight: 700, fontSize: 13, color: C.purple, padding: "8px 0 4px", borderBottom: `2px solid ${C.purple}44`, marginBottom: 8 }}>{cat}</div>
-                      {catItems.map(item => (
-                        <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: `1px solid ${C.border}` }}>
-                          <div style={{ flex: 1, fontSize: 14 }}>{item.name}</div>
-                          {isGerant ? (
-                            <input type="number" min="0" value={item.qty} onChange={e => updateModelItemQty(selectedModel.id, item.id, e.target.value)} style={{ width: 60, padding: "6px 8px", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, color: C.text, fontSize: 14, fontWeight: 700, outline: "none", textAlign: "center" }} />
-                          ) : (
-                            <span style={{ fontWeight: 700, color: C.teal }}>{item.qty}</span>
-                          )}
-                          {isGerant && (
-                            <button onClick={() => deleteModelItem(selectedModel.id, item.id)} style={{ background: "none", border: "none", cursor: "pointer", color: C.red }}><Ic d={ic.trash} size={14} /></button>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  );
-                });
-              })()}
+              {[...new Set((selectedModel.inventory || []).map(i => i.category))].map(cat => {
+                const catItems = (selectedModel.inventory || []).filter(i => i.category === cat);
+                return (
+                  <div key={cat} style={{ marginBottom: 12 }}>
+                    <div style={{ fontWeight: 700, fontSize: 13, color: C.purple, padding: "8px 0 4px", borderBottom: `2px solid ${C.purple}44`, marginBottom: 8 }}>{cat}</div>
+                    {catItems.map(item => (
+                      <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: `1px solid ${C.border}` }}>
+                        <div style={{ flex: 1, fontSize: 14 }}>{item.name}</div>
+                        {isGerant ? (
+                          <input type="number" min="0" value={item.qty} onChange={e => updateModelItemQty(selectedModel.id, item.id, e.target.value)} style={{ width: 60, padding: "6px 8px", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, color: C.text, fontSize: 14, fontWeight: 700, outline: "none", textAlign: "center" }} />
+                        ) : (
+                          <span style={{ fontWeight: 700, color: C.teal }}>{item.qty}</span>
+                        )}
+                        {isGerant && <button onClick={() => deleteModelItem(selectedModel.id, item.id)} style={{ background: "none", border: "none", cursor: "pointer", color: C.red }}><Ic d={ic.trash} size={14} /></button>}
+                      </div>
+                    ))}
+                  </div>
+                );
+              })}
             </div>
           )}
 
@@ -1072,71 +1080,52 @@ export default function App() {
                 <div><h1 style={{ margin: 0, fontSize: 22, fontWeight: 800 }}>Réparations</h1><p style={{ margin: "3px 0 0", color: C.muted, fontSize: 13 }}>Suivi et réparateurs</p></div>
                 <Btn onClick={openAddRepairer}><Ic d={ic.plus} size={14} /> Réparateur</Btn>
               </div>
-
-              {/* Récapitulatif global */}
               {myRepairs.filter(r => r.status === "En réparation").length > 0 && (
                 <div style={{ background: C.amber + "15", border: `1px solid ${C.amber}44`, borderRadius: 12, padding: "14px 16px", marginBottom: 16 }}>
-                  <div style={{ fontWeight: 700, color: C.amber, marginBottom: 8 }}>
-                    📊 Total en réparation : {myRepairs.filter(r => r.status === "En réparation").reduce((s, r) => s + r.qty, 0)} article(s)
-                  </div>
+                  <div style={{ fontWeight: 700, color: C.amber, marginBottom: 8 }}>📊 Total en réparation : {myRepairs.filter(r => r.status === "En réparation").reduce((s, r) => s + r.qty, 0)} article(s)</div>
                   {myRepairers.map(rep => {
-                    const reps = myRepairs.filter(r => r.repairerId === rep.id && r.status === "En réparation");
+                    const reps = myRepairs.filter(r => r.repairer_id === rep.id && r.status === "En réparation");
                     if (reps.length === 0) return null;
-                    return (
-                      <div key={rep.id} style={{ fontSize: 13, padding: "3px 0", display: "flex", justifyContent: "space-between", borderBottom: `1px solid ${C.amber}22` }}>
-                        <span>🏭 {rep.name}</span>
-                        <span style={{ color: C.amber, fontWeight: 700 }}>{reps.reduce((s, r) => s + r.qty, 0)} article(s)</span>
-                      </div>
-                    );
+                    return <div key={rep.id} style={{ fontSize: 13, padding: "3px 0", display: "flex", justifyContent: "space-between", borderBottom: `1px solid ${C.amber}22` }}><span>🏭 {rep.name}</span><span style={{ color: C.amber, fontWeight: 700 }}>{reps.reduce((s, r) => s + r.qty, 0)} article(s)</span></div>;
                   })}
                 </div>
               )}
-
-              {/* Liste réparateurs */}
               {myRepairers.length === 0
                 ? <div style={{ textAlign: "center", color: C.muted, padding: 40 }}>Aucun réparateur. Ajoutez-en un avec le bouton ci-dessus !</div>
-                : (
-                  <div style={{ marginBottom: 20 }}>
-                    <h2 style={{ fontSize: 14, fontWeight: 700, margin: "0 0 10px" }}>🏭 Mes réparateurs</h2>
-                    {myRepairers.map(rep => {
-                      const enCours = myRepairs.filter(r => r.repairerId === rep.id && r.status === "En réparation");
-                      const hsCount = myRepairs.filter(r => r.repairerId === rep.id && r.status === "Hors service").length;
-                      return (
-                        <div key={rep.id} onClick={() => setSelectedRepairer(rep)} style={{ background: C.card, border: `1px solid ${enCours.length > 0 ? C.amber + "55" : C.border}`, borderRadius: 14, padding: 16, marginBottom: 10, cursor: "pointer" }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                            <div style={{ flex: 1 }}>
-                              <div style={{ fontWeight: 800, fontSize: 16 }}>🏭 {rep.name} <span style={{ fontSize: 12, color: C.muted, fontWeight: 400 }}>→ voir</span></div>
-                              {rep.phone && <div style={{ fontSize: 13, color: C.muted, marginTop: 2 }}>📞 {rep.phone}</div>}
-                              {rep.email && <div style={{ fontSize: 13, color: C.muted }}>✉️ {rep.email}</div>}
-                              {rep.address && <div style={{ fontSize: 13, color: C.muted }}>📍 {rep.address}</div>}
-                              <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
-                                {enCours.length > 0 && <Badge label={`🔧 ${enCours.length} en réparation`} color={C.amber} />}
-                                {hsCount > 0 && <Badge label={`💀 ${hsCount} hors service`} color={C.red} />}
-                                {enCours.length === 0 && hsCount === 0 && <Badge label="✅ Rien en cours" color={C.green} />}
-                              </div>
-                            </div>
-                            <div style={{ display: "flex", gap: 6, flexShrink: 0 }} onClick={e => e.stopPropagation()}>
-                              <button onClick={() => openEditRepairer(rep)} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, cursor: "pointer", color: C.muted, padding: "6px 9px" }}><Ic d={ic.edit} size={14} /></button>
-                              <button onClick={() => askConfirm(`Supprimer "${rep.name}" ?`, () => setRepairers(rs => rs.filter(r => r.id !== rep.id)))} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, cursor: "pointer", color: C.red, padding: "6px 9px" }}><Ic d={ic.trash} size={14} /></button>
-                            </div>
+                : myRepairers.map(rep => {
+                  const enCours = myRepairs.filter(r => r.repairer_id === rep.id && r.status === "En réparation");
+                  const hsCount = myRepairs.filter(r => r.repairer_id === rep.id && r.status === "Hors service").length;
+                  return (
+                    <div key={rep.id} onClick={() => setSelectedRepairer(rep)} style={{ background: C.card, border: `1px solid ${enCours.length > 0 ? C.amber + "55" : C.border}`, borderRadius: 14, padding: 16, marginBottom: 10, cursor: "pointer" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontWeight: 800, fontSize: 16 }}>🏭 {rep.name} <span style={{ fontSize: 12, color: C.muted, fontWeight: 400 }}>→ voir</span></div>
+                          {rep.phone && <div style={{ fontSize: 13, color: C.muted, marginTop: 2 }}>📞 {rep.phone}</div>}
+                          {rep.email && <div style={{ fontSize: 13, color: C.muted }}>✉️ {rep.email}</div>}
+                          {rep.address && <div style={{ fontSize: 13, color: C.muted }}>📍 {rep.address}</div>}
+                          <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
+                            {enCours.length > 0 && <Badge label={`🔧 ${enCours.length} en réparation`} color={C.amber} />}
+                            {hsCount > 0 && <Badge label={`💀 ${hsCount} hors service`} color={C.red} />}
+                            {enCours.length === 0 && hsCount === 0 && <Badge label="✅ Rien en cours" color={C.green} />}
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
-                )
+                        <div style={{ display: "flex", gap: 6, flexShrink: 0 }} onClick={e => e.stopPropagation()}>
+                          <button onClick={() => openEditRepairer(rep)} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, cursor: "pointer", color: C.muted, padding: "6px 9px" }}><Ic d={ic.edit} size={14} /></button>
+                          <button onClick={() => askConfirm(`Supprimer "${rep.name}" ?`, async () => { await supabase.from("repairers").delete().eq("id", rep.id); setRepairers(rs => rs.filter(r => r.id !== rep.id)); })} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, cursor: "pointer", color: C.red, padding: "6px 9px" }}><Ic d={ic.trash} size={14} /></button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
               }
-
-              {/* Réparations hors service */}
               {myRepairs.filter(r => r.status === "Hors service").length > 0 && (
-                <div>
-                  <h2 style={{ fontSize: 14, fontWeight: 700, color: C.red, margin: "0 0 10px" }}>💀 Hors service ({myRepairs.filter(r => r.status === "Hors service").length})</h2>
+                <div style={{ marginTop: 16 }}>
+                  <h2 style={{ fontSize: 14, fontWeight: 700, color: C.red, margin: "0 0 10px" }}>💀 Hors service</h2>
                   {myRepairs.filter(r => r.status === "Hors service").map(r => (
                     <div key={r.id} style={{ background: C.card, border: `1px solid ${C.red}44`, borderRadius: 12, padding: "12px 16px", marginBottom: 8 }}>
-                      <div style={{ fontWeight: 700 }}>{r.qty} × {r.itemName}</div>
-                      <div style={{ fontSize: 12, color: C.muted }}>📍 {r.lodgingName} · {dest(r.destId)?.name}</div>
-                      <div style={{ fontSize: 12, color: C.muted }}>🏭 {myRepairers.find(x => x.id === r.repairerId)?.name || r.repairer}</div>
-                      {r.returnNote && <div style={{ fontSize: 12, color: C.muted, fontStyle: "italic" }}>💬 {r.returnNote}</div>}
+                      <div style={{ fontWeight: 700 }}>{r.qty} × {r.item_name}</div>
+                      <div style={{ fontSize: 12, color: C.muted }}>📍 {r.lodging_name} · {dest(r.dest_id)?.name}</div>
+                      {r.return_note && <div style={{ fontSize: 12, color: C.muted, fontStyle: "italic" }}>💬 {r.return_note}</div>}
                     </div>
                   ))}
                 </div>
@@ -1144,52 +1133,41 @@ export default function App() {
             </div>
           )}
 
-          {/* ── VUE DÉTAIL RÉPARATEUR ── */}
+          {/* ── REPAIRER DETAIL ── */}
           {tab === "repairs" && selectedRepairer && (
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
                 <button onClick={() => setSelectedRepairer(null)} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, cursor: "pointer", color: C.muted, padding: "8px 10px", display: "flex" }}><Ic d={ic.back} size={16} /></button>
                 <div style={{ flex: 1 }}>
                   <h1 style={{ margin: 0, fontSize: 20, fontWeight: 800 }}>🏭 {selectedRepairer.name}</h1>
-                  <p style={{ margin: 0, color: C.muted, fontSize: 13 }}>
-                    {selectedRepairer.phone && `📞 ${selectedRepairer.phone}`}
-                    {selectedRepairer.email && ` · ✉️ ${selectedRepairer.email}`}
-                  </p>
+                  <p style={{ margin: 0, color: C.muted, fontSize: 13 }}>{selectedRepairer.phone && `📞 ${selectedRepairer.phone}`}{selectedRepairer.email && ` · ✉️ ${selectedRepairer.email}`}</p>
                 </div>
               </div>
-
               {["En réparation", "Réparé"].map(status => {
-                const reps = myRepairs.filter(r => r.repairerId === selectedRepairer.id && r.status === status);
+                const reps = myRepairs.filter(r => r.repairer_id === selectedRepairer.id && r.status === status);
                 if (reps.length === 0) return null;
                 return (
                   <div key={status} style={{ marginBottom: 20 }}>
-                    <h2 style={{ fontSize: 14, fontWeight: 700, color: repairStatusColor(status), margin: "0 0 10px" }}>
-                      {status === "En réparation" ? "🔧" : "✅"} {status} ({reps.length})
-                    </h2>
+                    <h2 style={{ fontSize: 14, fontWeight: 700, color: repairStatusColor(status), margin: "0 0 10px" }}>{status === "En réparation" ? "🔧" : "✅"} {status} ({reps.length})</h2>
                     {reps.map(r => (
                       <div key={r.id} style={{ background: C.card, border: `1px solid ${repairStatusColor(r.status)}44`, borderRadius: 12, padding: "14px 16px", marginBottom: 8 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
                           <div>
-                            <div style={{ fontWeight: 700, fontSize: 15 }}>{r.qty} × {r.itemName}</div>
-                            <div style={{ fontSize: 12, color: C.muted }}>📍 {r.lodgingName} · {dest(r.destId)?.name}</div>
-                            <div style={{ fontSize: 12, color: C.muted }}>📅 Sorti le {r.dateOut}</div>
+                            <div style={{ fontWeight: 700, fontSize: 15 }}>{r.qty} × {r.item_name}</div>
+                            <div style={{ fontSize: 12, color: C.muted }}>📍 {r.lodging_name} · {dest(r.dest_id)?.name}</div>
+                            <div style={{ fontSize: 12, color: C.muted }}>📅 Sorti le {r.date_out}</div>
                             {r.note && <div style={{ fontSize: 12, color: C.muted, fontStyle: "italic", marginTop: 2 }}>💬 {r.note}</div>}
-                            {r.dateBack && <div style={{ fontSize: 12, color: C.green, marginTop: 2 }}>✅ Retour le {r.dateBack}{r.returnNote ? ` — ${r.returnNote}` : ""}</div>}
+                            {r.date_back && <div style={{ fontSize: 12, color: C.green, marginTop: 2 }}>✅ Retour le {r.date_back}{r.return_note ? ` — ${r.return_note}` : ""}</div>}
                           </div>
                           <Badge label={r.status} color={repairStatusColor(r.status)} />
                         </div>
-                        {isAdmin && r.status === "En réparation" && (
-                          <Btn small onClick={() => openReturnRepair(r)}>Retour de réparation</Btn>
-                        )}
+                        {isAdmin && r.status === "En réparation" && <Btn small onClick={() => openReturnRepair(r)}>Retour de réparation</Btn>}
                       </div>
                     ))}
                   </div>
                 );
               })}
-
-              {myRepairs.filter(r => r.repairerId === selectedRepairer.id).length === 0 && (
-                <div style={{ textAlign: "center", color: C.muted, padding: 40 }}>Aucune réparation pour ce réparateur.</div>
-              )}
+              {myRepairs.filter(r => r.repairer_id === selectedRepairer.id).length === 0 && <div style={{ textAlign: "center", color: C.muted, padding: 40 }}>Aucune réparation pour ce réparateur.</div>}
             </div>
           )}
 
@@ -1206,7 +1184,7 @@ export default function App() {
                     <Badge label={u.role} color={ROLE_COLORS[u.role] || C.muted} />
                     {u.email && <div style={{ fontSize: 13, color: C.muted, marginTop: 4 }}>✉️ {u.email}</div>}
                     {u.phone && <div style={{ fontSize: 13, color: C.muted }}>📞 {u.phone}</div>}
-                    {u.destinationId && <div style={{ fontSize: 12, color: C.purple }}>📍 {dest(u.destinationId)?.name}</div>}
+                    {u.destination_id && <div style={{ fontSize: 12, color: C.purple }}>📍 {dest(u.destination_id)?.name}</div>}
                   </div>
                 </div>
               ))}
@@ -1229,12 +1207,12 @@ export default function App() {
                     {u.phone && <div style={{ fontSize: 12, color: C.muted }}>{u.phone}</div>}
                     <div style={{ marginTop: 4, display: "flex", gap: 6, flexWrap: "wrap" }}>
                       <Badge label={u.role} color={ROLE_COLORS[u.role] || C.muted} />
-                      {u.destinationId && <Badge label={dest(u.destinationId)?.name || ""} color={C.purple} />}
+                      {u.destination_id && <Badge label={dest(u.destination_id)?.name || ""} color={C.purple} />}
                     </div>
                   </div>
                   <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
                     <button onClick={() => openEditUser(u)} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, cursor: "pointer", color: C.muted, padding: "6px 9px" }}><Ic d={ic.edit} size={14} /></button>
-                    {u.id !== currentUser.id && <button onClick={() => askConfirm("Supprimer cet utilisateur ?", () => setUsers(us => us.filter(x => x.id !== u.id)))} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, cursor: "pointer", color: C.red, padding: "6px 9px" }}><Ic d={ic.trash} size={14} /></button>}
+                    {u.id !== currentUser.id && <button onClick={() => askConfirm("Supprimer cet utilisateur ?", async () => { await supabase.from("users").delete().eq("id", u.id); setUsers(us => us.filter(x => x.id !== u.id)); })} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, cursor: "pointer", color: C.red, padding: "6px 9px" }}><Ic d={ic.trash} size={14} /></button>}
                   </div>
                 </div>
               ))}
@@ -1248,7 +1226,7 @@ export default function App() {
               {journal.length === 0 && <div style={{ textAlign: "center", color: C.muted, padding: 40 }}>Aucune activité enregistrée</div>}
               {journal.map(j => (
                 <div key={j.id} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: "12px 16px", marginBottom: 8, display: "flex", justifyContent: "space-between" }}>
-                  <div><div style={{ fontWeight: 700, fontSize: 14 }}>{j.action}</div><div style={{ fontSize: 13, color: C.muted }}>{j.detail}</div><div style={{ fontSize: 11, color: C.muted }}>par {j.userName}</div></div>
+                  <div><div style={{ fontWeight: 700, fontSize: 14 }}>{j.action}</div><div style={{ fontSize: 13, color: C.muted }}>{j.detail}</div><div style={{ fontSize: 11, color: C.muted }}>par {j.user_name}</div></div>
                   <div style={{ fontSize: 11, color: C.muted, textAlign: "right", marginLeft: 12 }}>{j.date}</div>
                 </div>
               ))}
@@ -1274,72 +1252,63 @@ export default function App() {
       </div>
 
       {/* ── MODALS ── */}
-
       {modal?.type === "dest" && (
         <Modal title={modal.id ? "Modifier la destination" : "Nouvelle destination"} onClose={() => setModal(null)}>
-          <Field label="Nom" value={form.name} onChange={ff("name")} placeholder="Camping Le Soleil" />
+          <Field label="Nom" value={form.name || ""} onChange={ff("name")} placeholder="Camping Le Soleil" />
           <Row2><Field label="Ville" half value={form.city || ""} onChange={ff("city")} placeholder="Arcachon" /><Field label="Adresse" half value={form.address || ""} onChange={ff("address")} placeholder="123 avenue…" /></Row2>
-          <Field label="Gérant responsable" as="select" value={form.managerId || ""} onChange={ff("managerId")}>
-            <option value="">— Aucun —</option>
-            {myUsers.map(u => <option key={u.id} value={u.id}>{u.name} ({u.role})</option>)}
-          </Field>
-          <div style={{ display: "flex", gap: 10, marginTop: 4 }}><Btn variant="ghost" onClick={() => setModal(null)} full>Annuler</Btn><Btn onClick={saveDest} full>{modal.id ? "Sauvegarder" : "Créer"}</Btn></div>
+          <Field label="Gérant responsable" as="select" value={form.manager_id || ""} onChange={ff("manager_id")}><option value="">— Aucun —</option>{myUsers.map(u => <option key={u.id} value={u.id}>{u.name} ({u.role})</option>)}</Field>
+          <div style={{ display: "flex", gap: 10 }}><Btn variant="ghost" onClick={() => setModal(null)} full>Annuler</Btn><Btn onClick={saveDest} full>{modal.id ? "Sauvegarder" : "Créer"}</Btn></div>
         </Modal>
       )}
 
       {modal?.type === "lodging" && (
         <Modal title="Ajouter un logement" onClose={() => setModal(null)}>
-          <Field label="Nom du logement" value={form.name} onChange={ff("name")} placeholder="Ex: Estival A1" />
+          <Field label="Nom du logement" value={form.name || ""} onChange={ff("name")} placeholder="Ex: Estival A1" />
           <Field label="Numéro / référence" value={form.number || ""} onChange={ff("number")} placeholder="Ex: A1, B3…" />
-          <Field label="Type de logement" as="select" value={form.modelId || ""} onChange={ff("modelId")}>
+          <Field label="Type de logement" as="select" value={form.model_id || ""} onChange={ff("model_id")}>
             <option value="">— Aucun type —</option>
             {myModels.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
           </Field>
           <div style={{ background: C.surface, borderRadius: 10, padding: "10px 14px", fontSize: 13, color: C.muted, marginBottom: 14 }}>
-            💡 Une fois le logement créé, cliquez dessus pour ajouter son inventaire depuis la liste des articles existants.
+            💡 L'inventaire sera automatiquement créé à partir du type sélectionné.
           </div>
           <div style={{ display: "flex", gap: 10 }}><Btn variant="ghost" onClick={() => setModal(null)} full>Annuler</Btn><Btn onClick={saveLodging} full>Créer</Btn></div>
+        </Modal>
+      )}
+
+      {modal?.type === "model" && (
+        <Modal title="Nouveau type de logement" onClose={() => setModal(null)}>
+          <Field label="Nom" value={form.name || ""} onChange={ff("name")} placeholder="Ex: Estival, Escapade, Bungalow…" />
+          <Field label="Description (facultatif)" value={form.description || ""} onChange={ff("description")} placeholder="Ex: Logement estival sans sanitaire" />
+          <div style={{ display: "flex", gap: 10 }}><Btn variant="ghost" onClick={() => setModal(null)} full>Annuler</Btn><Btn onClick={saveModel} full>Créer</Btn></div>
         </Modal>
       )}
 
       {modal?.type === "addArticles" && (
         <Modal title={`Inventaire — ${form.lodgingName}`} onClose={() => setModal(null)}>
           <p style={{ fontSize: 13, color: C.muted, margin: "0 0 14px" }}>Cochez les articles à ajouter et ajustez les quantités.</p>
-
-          {/* Boutons tout cocher/décocher */}
           <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-            <button onClick={() => setForm(f => { const c = {}; Object.keys(f.allArticles || {}).forEach(k => { c[`art_${k}`] = true; }); return { ...f, checked: c }; })} style={{ background: C.tealDim, border: `1px solid ${C.teal}44`, borderRadius: 8, cursor: "pointer", color: C.teal, padding: "6px 14px", fontSize: 12, fontWeight: 700 }}>✓ Tout cocher</button>
+            <button onClick={() => setForm(f => { const c = {}; Object.values(f.allArticles || {}).forEach(a => { c[a.id] = true; }); return { ...f, checked: c }; })} style={{ background: C.tealDim, border: `1px solid ${C.teal}44`, borderRadius: 8, cursor: "pointer", color: C.teal, padding: "6px 14px", fontSize: 12, fontWeight: 700 }}>✓ Tout cocher</button>
             <button onClick={() => setForm(f => { const c = {}; Object.keys(f.checked || {}).forEach(k => { c[k] = false; }); return { ...f, checked: c }; })} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, cursor: "pointer", color: C.muted, padding: "6px 14px", fontSize: 12 }}>✗ Tout décocher</button>
           </div>
-
-          {/* Articles par catégorie */}
-          {(() => {
-            const allArts = Object.values(form.allArticles || {});
-            const cats = [...new Set(allArts.map(a => a.category))];
-            return cats.map(cat => (
-              <div key={cat} style={{ marginBottom: 10 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: C.purple, padding: "5px 0", borderBottom: `1px solid ${C.purple}33`, marginBottom: 6 }}>{cat}</div>
-                {allArts.filter(a => a.category === cat).map(art => {
-                  const isChecked = !!form.checked?.[art.id];
-                  const qty = form.qtys?.[art.id] ?? art.defaultQty;
-                  return (
-                    <div key={art.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 4px", borderBottom: `1px solid ${C.border}`, background: isChecked ? C.tealDim : "transparent" }}>
-                      <div onClick={() => setForm(f => ({ ...f, checked: { ...f.checked, [art.id]: !isChecked } }))}
-                        style={{ width: 22, height: 22, borderRadius: 5, border: `2px solid ${isChecked ? C.teal : C.border}`, background: isChecked ? C.teal : "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                        {isChecked && <span style={{ color: "#fff", fontSize: 13, fontWeight: 800 }}>✓</span>}
-                      </div>
-                      <span style={{ flex: 1, fontSize: 13, color: isChecked ? C.text : C.muted }}>{art.name}</span>
-                      <input type="number" min="0" value={qty} onChange={e => setForm(f => ({ ...f, qtys: { ...f.qtys, [art.id]: +e.target.value } }))}
-                        disabled={!isChecked}
-                        style={{ width: 52, padding: "5px 4px", background: isChecked ? C.card : C.surface, border: `1px solid ${isChecked ? C.border : "transparent"}`, borderRadius: 8, color: C.text, fontSize: 13, fontWeight: 700, outline: "none", textAlign: "center", opacity: isChecked ? 1 : 0.4 }} />
+          {[...new Set(Object.values(form.allArticles || {}).map(a => a.category))].map(cat => (
+            <div key={cat} style={{ marginBottom: 10 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: C.purple, padding: "5px 0", borderBottom: `1px solid ${C.purple}33`, marginBottom: 6 }}>{cat}</div>
+              {Object.values(form.allArticles || {}).filter(a => a.category === cat).map(art => {
+                const isChecked = !!form.checked?.[art.id];
+                const qty = form.qtys?.[art.id] ?? art.defaultQty;
+                return (
+                  <div key={art.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 4px", borderBottom: `1px solid ${C.border}`, background: isChecked ? C.tealDim : "transparent" }}>
+                    <div onClick={() => setForm(f => ({ ...f, checked: { ...f.checked, [art.id]: !isChecked } }))} style={{ width: 22, height: 22, borderRadius: 5, border: `2px solid ${isChecked ? C.teal : C.border}`, background: isChecked ? C.teal : "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      {isChecked && <span style={{ color: "#fff", fontSize: 13, fontWeight: 800 }}>✓</span>}
                     </div>
-                  );
-                })}
-              </div>
-            ));
-          })()}
-
-          {/* Créer un nouvel article */}
+                    <span style={{ flex: 1, fontSize: 13, color: isChecked ? C.text : C.muted }}>{art.name}</span>
+                    <input type="number" min="0" value={qty} onChange={e => setForm(f => ({ ...f, qtys: { ...f.qtys, [art.id]: +e.target.value } }))} disabled={!isChecked} style={{ width: 52, padding: "5px 4px", background: isChecked ? C.card : C.surface, border: `1px solid ${isChecked ? C.border : "transparent"}`, borderRadius: 8, color: C.text, fontSize: 13, fontWeight: 700, outline: "none", textAlign: "center", opacity: isChecked ? 1 : 0.4 }} />
+                  </div>
+                );
+              })}
+            </div>
+          ))}
           <div style={{ background: C.surface, borderRadius: 10, padding: 12, margin: "14px 0" }}>
             <div style={{ fontSize: 12, color: C.muted, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 10 }}>➕ Créer un nouvel article</div>
             <div style={{ marginBottom: 8 }}>
@@ -1365,22 +1334,10 @@ export default function App() {
             </Row2>
             <Btn small onClick={addArticleToForm}><Ic d={ic.plus} size={13} /> Ajouter à la liste</Btn>
           </div>
-
           <div style={{ background: C.tealDim, borderRadius: 8, padding: "8px 12px", marginBottom: 14, fontSize: 13, color: C.teal, fontWeight: 700 }}>
             {Object.values(form.checked || {}).filter(Boolean).length} article(s) sélectionné(s)
           </div>
           <div style={{ display: "flex", gap: 10 }}><Btn variant="ghost" onClick={() => setModal(null)} full>Annuler</Btn><Btn onClick={saveAddArticles} full>Valider l'inventaire</Btn></div>
-        </Modal>
-      )}
-
-      {modal?.type === "model" && (
-        <Modal title="Nouveau modèle de logement" onClose={() => setModal(null)}>
-          <Field label="Nom du modèle" value={form.name} onChange={ff("name")} placeholder="Ex: Estival, Bungalow, Tente…" />
-          <Field label="Description (facultatif)" value={form.description || ""} onChange={ff("description")} placeholder="Ex: Logement estival sans sanitaire" />
-          <div style={{ background: C.surface, borderRadius: 10, padding: "10px 14px", fontSize: 13, color: C.muted, marginBottom: 14 }}>
-            Après création, vous pourrez ajouter les articles de l'inventaire type.
-          </div>
-          <div style={{ display: "flex", gap: 10, marginTop: 4 }}><Btn variant="ghost" onClick={() => setModal(null)} full>Annuler</Btn><Btn onClick={saveModel} full>Créer</Btn></div>
         </Modal>
       )}
 
@@ -1391,77 +1348,70 @@ export default function App() {
             <div style={{ fontSize: 13, color: C.muted }}>Depuis : {form.lodgingName}</div>
           </div>
           <Field label="Quantité à envoyer" type="number" value={form.qty} onChange={ff("qty")} placeholder="1" />
-          {myRepairers.length === 0 ? (
-            <div style={{ background: C.red + "15", border: `1px solid ${C.red}33`, borderRadius: 10, padding: "10px 14px", marginBottom: 14, fontSize: 13, color: C.red }}>
-              ⚠️ Aucun réparateur enregistré. Ajoutez-en un depuis l'onglet Réparations.
-            </div>
-          ) : (
-            <div style={{ marginBottom: 13 }}>
-              <label style={{ display: "block", fontSize: 11, color: C.muted, marginBottom: 5, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase" }}>Réparateur</label>
-              {myRepairers.map(rep => (
-                <div key={rep.id} onClick={() => setForm(f => ({ ...f, repairerId: rep.id }))}
-                  style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", marginBottom: 6, borderRadius: 10, border: `2px solid ${form.repairerId === rep.id ? C.teal : C.border}`, background: form.repairerId === rep.id ? C.tealDim : C.surface, cursor: "pointer" }}>
-                  <div style={{ width: 18, height: 18, borderRadius: "50%", border: `2px solid ${form.repairerId === rep.id ? C.teal : C.border}`, background: form.repairerId === rep.id ? C.teal : "transparent", flexShrink: 0 }} />
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: 14 }}>🏭 {rep.name}</div>
-                    {rep.phone && <div style={{ fontSize: 12, color: C.muted }}>📞 {rep.phone}</div>}
-                    {rep.address && <div style={{ fontSize: 12, color: C.muted }}>📍 {rep.address}</div>}
+          {myRepairers.length === 0
+            ? <div style={{ background: C.red + "15", border: `1px solid ${C.red}33`, borderRadius: 10, padding: "10px 14px", marginBottom: 14, fontSize: 13, color: C.red }}>⚠️ Aucun réparateur enregistré. Ajoutez-en un dans l'onglet Réparations.</div>
+            : (
+              <div style={{ marginBottom: 13 }}>
+                <label style={{ display: "block", fontSize: 11, color: C.muted, marginBottom: 5, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase" }}>Réparateur</label>
+                {myRepairers.map(rep => (
+                  <div key={rep.id} onClick={() => setForm(f => ({ ...f, repairerId: rep.id }))} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", marginBottom: 6, borderRadius: 10, border: `2px solid ${form.repairerId === rep.id ? C.teal : C.border}`, background: form.repairerId === rep.id ? C.tealDim : C.surface, cursor: "pointer" }}>
+                    <div style={{ width: 18, height: 18, borderRadius: "50%", border: `2px solid ${form.repairerId === rep.id ? C.teal : C.border}`, background: form.repairerId === rep.id ? C.teal : "transparent", flexShrink: 0 }} />
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: 14 }}>🏭 {rep.name}</div>
+                      {rep.phone && <div style={{ fontSize: 12, color: C.muted }}>📞 {rep.phone}</div>}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
+                ))}
+              </div>
+            )
+          }
           <Field label="Note (facultatif)" value={form.note || ""} onChange={ff("note")} placeholder="Ex: Bâche déchirée côté gauche…" as="textarea" />
-          <div style={{ display: "flex", gap: 10, marginTop: 4 }}><Btn variant="ghost" onClick={() => setModal(null)} full>Annuler</Btn><Btn variant="amber" onClick={saveRepair} full disabled={!form.repairerId || !form.qty}>Envoyer en réparation</Btn></div>
-        </Modal>
-      )}
-
-      {modal?.type === "repairer" && (
-        <Modal title={modal.id ? "Modifier le réparateur" : "Nouveau réparateur"} onClose={() => setModal(null)}>
-          <Field label="Nom / Entreprise" value={form.name || ""} onChange={ff("name")} placeholder="Ex: Couturier Dupont, SAV Électro…" />
-          <Field label="Téléphone" type="tel" value={form.phone || ""} onChange={ff("phone")} placeholder="06 12 34 56 78" />
-          <Field label="Email (facultatif)" type="email" value={form.email || ""} onChange={ff("email")} placeholder="contact@reparateur.fr" />
-          <Field label="Adresse (facultatif)" value={form.address || ""} onChange={ff("address")} placeholder="12 rue des artisans…" />
-          <div style={{ display: "flex", gap: 10, marginTop: 4 }}><Btn variant="ghost" onClick={() => setModal(null)} full>Annuler</Btn><Btn onClick={saveRepairer} full>{modal.id ? "Sauvegarder" : "Créer"}</Btn></div>
+          <div style={{ display: "flex", gap: 10 }}><Btn variant="ghost" onClick={() => setModal(null)} full>Annuler</Btn><Btn variant="amber" onClick={saveRepair} full disabled={!form.repairerId || !form.qty}>Envoyer</Btn></div>
         </Modal>
       )}
 
       {modal?.type === "returnRepair" && (
         <Modal title="Retour de réparation" onClose={() => setModal(null)}>
           <div style={{ background: C.surface, borderRadius: 10, padding: "10px 14px", marginBottom: 14 }}>
-            <div style={{ fontWeight: 700 }}>{modal.repair.qty} × {modal.repair.itemName}</div>
-            <div style={{ fontSize: 13, color: C.muted }}>Chez {modal.repair.repairer} depuis le {modal.repair.dateOut}</div>
+            <div style={{ fontWeight: 700 }}>{modal.repair.qty} × {modal.repair.item_name}</div>
+            <div style={{ fontSize: 13, color: C.muted }}>Chez {modal.repair.repairer} depuis le {modal.repair.date_out}</div>
           </div>
-          <Field label="Statut de retour" as="select" value={form.status} onChange={ff("status")}>
-            <option>Réparé</option>
-            <option>Hors service</option>
-          </Field>
+          <Field label="Statut de retour" as="select" value={form.status} onChange={ff("status")}><option>Réparé</option><option>Hors service</option></Field>
           {form.status === "Réparé" && (
             <Field label="Retour dans quel logement ?" as="select" value={form.returnTo} onChange={ff("returnTo")}>
               <option value="">— Choisir —</option>
-              {myLodgings.filter(l => l.destinationId === modal.repair.destId).map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
-              {myLodgings.filter(l => l.destinationId !== modal.repair.destId).map(l => <option key={l.id} value={l.id}>{l.name} ({dest(l.destinationId)?.name})</option>)}
+              {myLodgings.filter(l => l.destination_id === modal.repair.dest_id).map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+              {myLodgings.filter(l => l.destination_id !== modal.repair.dest_id).map(l => <option key={l.id} value={l.id}>{l.name} ({dest(l.destination_id)?.name})</option>)}
             </Field>
           )}
-          {form.status === "Hors service" && (
-            <div style={{ background: C.red + "15", border: `1px solid ${C.red}44`, borderRadius: 10, padding: "10px 14px", marginBottom: 14, fontSize: 13, color: C.red }}>
-              💀 Cet article sera marqué hors service. Pensez à le remplacer depuis une autre destination ou via une commande fournisseur.
-            </div>
-          )}
-          <Field label="Note (facultatif)" value={form.note || ""} onChange={ff("note")} placeholder="Ex: Réparation complète, à surveiller…" as="textarea" />
-          <div style={{ display: "flex", gap: 10, marginTop: 4 }}><Btn variant="ghost" onClick={() => setModal(null)} full>Annuler</Btn><Btn variant={form.status === "Réparé" ? "green" : "danger"} onClick={saveReturnRepair} full>{form.status === "Réparé" ? "✅ Retour validé" : "💀 Hors service"}</Btn></div>
+          {form.status === "Hors service" && <div style={{ background: C.red + "15", border: `1px solid ${C.red}44`, borderRadius: 10, padding: "10px 14px", marginBottom: 14, fontSize: 13, color: C.red }}>💀 Cet article sera marqué hors service.</div>}
+          <Field label="Note (facultatif)" value={form.note || ""} onChange={ff("note")} placeholder="Ex: Réparation complète…" as="textarea" />
+          <div style={{ display: "flex", gap: 10 }}><Btn variant="ghost" onClick={() => setModal(null)} full>Annuler</Btn><Btn variant={form.status === "Réparé" ? "green" : "danger"} onClick={saveReturnRepair} full>{form.status === "Réparé" ? "✅ Retour validé" : "💀 Hors service"}</Btn></div>
+        </Modal>
+      )}
+
+      {modal?.type === "repairer" && (
+        <Modal title={modal.id ? "Modifier le réparateur" : "Nouveau réparateur"} onClose={() => setModal(null)}>
+          <Field label="Nom / Entreprise" value={form.name || ""} onChange={ff("name")} placeholder="Ex: Couturier Dupont…" />
+          <Field label="Téléphone" type="tel" value={form.phone || ""} onChange={ff("phone")} placeholder="06 12 34 56 78" />
+          <Field label="Email (facultatif)" type="email" value={form.email || ""} onChange={ff("email")} placeholder="contact@reparateur.fr" />
+          <Field label="Adresse (facultatif)" value={form.address || ""} onChange={ff("address")} placeholder="12 rue des artisans…" />
+          <div style={{ display: "flex", gap: 10 }}><Btn variant="ghost" onClick={() => setModal(null)} full>Annuler</Btn><Btn onClick={saveRepairer} full>{modal.id ? "Sauvegarder" : "Créer"}</Btn></div>
         </Modal>
       )}
 
       {modal?.type === "user" && (
         <Modal title={modal.id ? "Modifier l'utilisateur" : "Créer un compte"} onClose={() => setModal(null)}>
-          <Field label="Nom complet" value={form.name} onChange={ff("name")} placeholder="Sophie Martin" />
+          <Field label="Nom complet" value={form.name || ""} onChange={ff("name")} placeholder="Sophie Martin" />
           <Field label="Email" type="email" value={form.email || ""} onChange={ff("email")} placeholder="s.martin@ohcampings.fr" />
           <Field label="Téléphone" type="tel" value={form.phone || ""} onChange={ff("phone")} placeholder="06 12 34 56 78" />
           <Field label="Mot de passe" type="password" value={form.password || ""} onChange={ff("password")} placeholder="••••••" />
-          <Field label="Rôle" as="select" value={form.role} onChange={ff("role")}>{["Gérant", "Gestionnaire", "Invité"].map(r => <option key={r}>{r}</option>)}</Field>
-          {form.role === "Invité" && <Field label="Destination attribuée" as="select" value={form.destinationId || ""} onChange={ff("destinationId")}><option value="">— Aucune —</option>{myDests.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}</Field>}
-          <div style={{ display: "flex", gap: 10, marginTop: 4 }}><Btn variant="ghost" onClick={() => setModal(null)} full>Annuler</Btn><Btn onClick={saveUser} full>{modal.id ? "Sauvegarder" : "Créer"}</Btn></div>
+          <Field label="Rôle" as="select" value={form.role || "Invité"} onChange={ff("role")}>{["Gérant", "Gestionnaire", "Invité"].map(r => <option key={r}>{r}</option>)}</Field>
+          {form.role === "Invité" && <Field label="Destination attribuée" as="select" value={form.destination_id || ""} onChange={ff("destination_id")}><option value="">— Aucune —</option>{myDests.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}</Field>}
+          <div style={{ background: C.surface, borderRadius: 10, padding: "0 14px", marginBottom: 14 }}>
+            <Toggle label="Peut voir les prix" value={!!(form.see_price === true || form.see_price === "true")} onChange={() => setForm(p => ({ ...p, see_price: !(p.see_price === true || p.see_price === "true") }))} />
+          </div>
+          <div style={{ display: "flex", gap: 10 }}><Btn variant="ghost" onClick={() => setModal(null)} full>Annuler</Btn><Btn onClick={saveUser} full>{modal.id ? "Sauvegarder" : "Créer"}</Btn></div>
         </Modal>
       )}
 
