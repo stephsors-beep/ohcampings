@@ -1316,6 +1316,7 @@ export default function App() {
           </div>
           <div style={{ display: "flex", gap: 10 }}><Btn variant="ghost" onClick={() => setModal(null)} full>Annuler</Btn><Btn onClick={saveLodging} full>Créer</Btn></div>
         </Modal>
+      )}
 
       {modal?.type === "lodging_edit" && (
         <Modal title="Modifier le logement" onClose={() => setModal(null)}>
