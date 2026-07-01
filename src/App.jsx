@@ -861,10 +861,21 @@ export default function App() {
                 const missing = getLodgingMissing(l.id);
                 const m = modelById(l.model_id);
                 return (
-                  <div key={l.id} onClick={() => setSelectedLodging(l)} style={{ background: C.card, border: `1px solid ${missing > 0 ? C.red + "55" : C.border}`, borderRadius: 14, padding: 16, marginBottom: 10, cursor: "pointer", boxShadow: "0 2px 8px #00000008" }}>
+                  <div key={l.id} style={{ background: C.card, border: `1px solid ${missing > 0 ? C.red + "55" : C.border}`, borderRadius: 14, padding: 16, marginBottom: 10, boxShadow: "0 2px 8px #00000008" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <div><div style={{ fontWeight: 700, fontSize: 15 }}>🏠 {l.name}</div><div style={{ fontSize: 12, color: C.muted }}>{m?.name || "—"} · voir inventaire →</div></div>
-                      {missing > 0 ? <Badge label={`-${missing} manquants`} color={C.red} /> : <Badge label="✅ Complet" color={C.green} />}
+                      <div onClick={() => setSelectedLodging(l)} style={{ flex: 1, cursor: "pointer" }}>
+                        <div style={{ fontWeight: 700, fontSize: 15 }}>🏠 {l.name}</div>
+                        <div style={{ fontSize: 12, color: C.muted }}>{m?.name || "—"} · voir inventaire →</div>
+                      </div>
+                      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                        {missing > 0 ? <Badge label={`-${missing} manquants`} color={C.red} /> : <Badge label="✅ Complet" color={C.green} />}
+                        {isAdmin && (
+                          <div style={{ display: "flex", gap: 4, marginLeft: 8 }}>
+                            <button onClick={e => { e.stopPropagation(); setForm({ ...l }); setModal({ type: "lodging_edit", id: l.id }); }} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, cursor: "pointer", color: C.muted, padding: "6px 9px" }}><Ic d={ic.edit} size={14} /></button>
+                            <button onClick={e => { e.stopPropagation(); askConfirm(`Supprimer le logement "${l.name}" ? Son inventaire sera aussi supprimé.`, async () => { await supabase.from("inventory_items").delete().eq("lodging_id", l.id); await supabase.from("lodgings").delete().eq("id", l.id); setLodgings(ls => ls.filter(x => x.id !== l.id)); setInventoryItems(items => items.filter(i => i.lodging_id !== l.id)); }); }} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, cursor: "pointer", color: C.red, padding: "6px 9px" }}><Ic d={ic.trash} size={14} /></button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
@@ -1057,14 +1068,45 @@ export default function App() {
                   <div key={cat} style={{ marginBottom: 12 }}>
                     <div style={{ fontWeight: 700, fontSize: 13, color: C.purple, padding: "8px 0 4px", borderBottom: `2px solid ${C.purple}44`, marginBottom: 8 }}>{cat}</div>
                     {catItems.map(item => (
-                      <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: `1px solid ${C.border}` }}>
-                        <div style={{ flex: 1, fontSize: 14 }}>{item.name}</div>
-                        {isGerant ? (
-                          <input type="number" min="0" value={item.qty} onChange={e => updateModelItemQty(selectedModel.id, item.id, e.target.value)} style={{ width: 60, padding: "6px 8px", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, color: C.text, fontSize: 14, fontWeight: 700, outline: "none", textAlign: "center" }} />
+                      <div key={item.id} style={{ borderBottom: `1px solid ${C.border}` }}>
+                        {form.editingItemId === item.id ? (
+                          // Mode édition
+                          <div style={{ padding: "10px 0" }}>
+                            <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
+                              <input value={form.editItemName || ""} onChange={ff("editItemName")} placeholder="Nom de l'article" style={{ flex: 1, padding: "8px 10px", background: C.surface, border: `1px solid ${C.teal}`, borderRadius: 8, color: C.text, fontSize: 13, outline: "none" }} />
+                              <input type="number" min="0" value={form.editItemQty || ""} onChange={ff("editItemQty")} style={{ width: 60, padding: "8px 6px", background: C.surface, border: `1px solid ${C.teal}`, borderRadius: 8, color: C.text, fontSize: 13, fontWeight: 700, outline: "none", textAlign: "center" }} />
+                            </div>
+                            <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
+                              <select value={form.editItemCat || ""} onChange={ff("editItemCat")} style={{ flex: 1, padding: "8px 10px", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, color: C.text, fontSize: 13, outline: "none" }}>
+                                {[...new Set((selectedModel.inventory || []).map(i => i.category))].map(c => <option key={c}>{c}</option>)}
+                              </select>
+                            </div>
+                            <div style={{ display: "flex", gap: 6 }}>
+                              <Btn small onClick={async () => {
+                                const newInventory = (selectedModel.inventory || []).map(i => i.id === item.id ? { ...i, name: form.editItemName, qty: +form.editItemQty, category: form.editItemCat || i.category } : i);
+                                await supabase.from("lodging_models").update({ inventory: newInventory }).eq("id", selectedModel.id);
+                                setLodgingModels(ms => ms.map(m => m.id === selectedModel.id ? { ...m, inventory: newInventory } : m));
+                                setSelectedModel(prev => ({ ...prev, inventory: newInventory }));
+                                setForm(f => ({ ...f, editingItemId: null }));
+                              }}>✅ Valider</Btn>
+                              <Btn small variant="ghost" onClick={() => setForm(f => ({ ...f, editingItemId: null }))}>Annuler</Btn>
+                            </div>
+                          </div>
                         ) : (
-                          <span style={{ fontWeight: 700, color: C.teal }}>{item.qty}</span>
+                          // Mode affichage
+                          <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0" }}>
+                            <div style={{ flex: 1, fontSize: 14 }}>{item.name}</div>
+                            {isGerant ? (
+                              <input type="number" min="0" value={item.qty} onChange={e => updateModelItemQty(selectedModel.id, item.id, e.target.value)} style={{ width: 60, padding: "6px 8px", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, color: C.text, fontSize: 14, fontWeight: 700, outline: "none", textAlign: "center" }} />
+                            ) : (
+                              <span style={{ fontWeight: 700, color: C.teal }}>{item.qty}</span>
+                            )}
+                            {isGerant && <>
+                              <button onClick={() => setForm(f => ({ ...f, editingItemId: item.id, editItemName: item.name, editItemQty: item.qty, editItemCat: item.category }))} style={{ background: "none", border: "none", cursor: "pointer", color: C.purple }}><Ic d={ic.edit} size={14} /></button>
+                              <button onClick={() => askConfirm(`Supprimer "${item.name}" ?`, () => deleteModelItem(selectedModel.id, item.id))} style={{ background: "none", border: "none", cursor: "pointer", color: C.red }}><Ic d={ic.trash} size={14} /></button>
+                            </>}
+                          </div>
                         )}
-                        {isGerant && <button onClick={() => deleteModelItem(selectedModel.id, item.id)} style={{ background: "none", border: "none", cursor: "pointer", color: C.red }}><Ic d={ic.trash} size={14} /></button>}
                       </div>
                     ))}
                   </div>
@@ -1274,6 +1316,24 @@ export default function App() {
           </div>
           <div style={{ display: "flex", gap: 10 }}><Btn variant="ghost" onClick={() => setModal(null)} full>Annuler</Btn><Btn onClick={saveLodging} full>Créer</Btn></div>
         </Modal>
+
+      {modal?.type === "lodging_edit" && (
+        <Modal title="Modifier le logement" onClose={() => setModal(null)}>
+          <Field label="Nom du logement" value={form.name || ""} onChange={ff("name")} placeholder="Ex: Estival A1" />
+          <Field label="Numéro / référence" value={form.number || ""} onChange={ff("number")} placeholder="Ex: A1, B3…" />
+          <Field label="Type de logement" as="select" value={form.model_id || ""} onChange={ff("model_id")}>
+            <option value="">— Aucun type —</option>
+            {myModels.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+          </Field>
+          <div style={{ display: "flex", gap: 10 }}><Btn variant="ghost" onClick={() => setModal(null)} full>Annuler</Btn><Btn onClick={async () => {
+            const row = { name: form.name, number: form.number || "", model_id: +form.model_id || null };
+            const { data } = await supabase.from("lodgings").update(row).eq("id", modal.id).select().single();
+            if (data) setLodgings(ls => ls.map(l => l.id === modal.id ? data : l));
+            addJournal("Logement modifié", form.name);
+            setModal(null);
+          }} full>Sauvegarder</Btn></div>
+        </Modal>
+      )}
       )}
 
       {modal?.type === "model" && (
