@@ -842,6 +842,14 @@ export default function App() {
                 </div>
                 <Btn small onClick={() => openAddLodging(selectedDest.id)}><Ic d={ic.plus} size={13} /> Logement</Btn>
               </div>
+
+              {/* Barre de recherche */}
+              <input
+                placeholder="🔍 Rechercher un logement…"
+                value={form.lodgingSearch || ""}
+                onChange={e => setForm(f => ({ ...f, lodgingSearch: e.target.value }))}
+                style={{ width: "100%", padding: "11px 14px", background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, color: C.text, fontSize: 14, outline: "none", marginBottom: 14, boxSizing: "border-box" }}
+              />
               {(() => {
                 const summary = getDestSummary(selectedDest.id);
                 const missing = Object.entries(summary).filter(([, v]) => v.actual < v.expected);
@@ -857,30 +865,59 @@ export default function App() {
                   </div>
                 );
               })()}
-              {myLodgings.filter(l => l.destination_id === selectedDest.id).sort((a, b) => a.name.localeCompare(b.name, "fr", { numeric: true })).map(l => {
-                const missing = getLodgingMissing(l.id);
-                const m = modelById(l.model_id);
-                return (
-                  <div key={l.id} style={{ background: C.card, border: `1px solid ${missing > 0 ? C.red + "55" : C.border}`, borderRadius: 14, padding: 16, marginBottom: 10, boxShadow: "0 2px 8px #00000008" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <div onClick={() => setSelectedLodging(l)} style={{ flex: 1, cursor: "pointer" }}>
-                        <div style={{ fontWeight: 700, fontSize: 15 }}>🏠 {l.name}</div>
-                        <div style={{ fontSize: 12, color: C.muted }}>{m?.name || "—"} · voir inventaire →</div>
-                      </div>
-                      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                        {missing > 0 ? <Badge label={`-${missing} manquants`} color={C.red} /> : <Badge label="✅ Complet" color={C.green} />}
-                        {isAdmin && (
-                          <div style={{ display: "flex", gap: 4, marginLeft: 8 }}>
-                            <button onClick={e => { e.stopPropagation(); setForm({ ...l }); setModal({ type: "lodging_edit", id: l.id }); }} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, cursor: "pointer", color: C.muted, padding: "6px 9px" }}><Ic d={ic.edit} size={14} /></button>
-                            <button onClick={e => { e.stopPropagation(); askConfirm(`Supprimer le logement "${l.name}" ? Son inventaire sera aussi supprimé.`, async () => { await supabase.from("inventory_items").delete().eq("lodging_id", l.id); await supabase.from("lodgings").delete().eq("id", l.id); setLodgings(ls => ls.filter(x => x.id !== l.id)); setInventoryItems(items => items.filter(i => i.lodging_id !== l.id)); }); }} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, cursor: "pointer", color: C.red, padding: "6px 9px" }}><Ic d={ic.trash} size={14} /></button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
+              {(() => {
+                const searchQ = (form.lodgingSearch || "").toLowerCase();
+                const destLodgings = myLodgings
+                  .filter(l => l.destination_id === selectedDest.id)
+                  .filter(l => !searchQ || l.name.toLowerCase().includes(searchQ) || (l.number || "").toLowerCase().includes(searchQ))
+                  .sort((a, b) => a.name.localeCompare(b.name, "fr", { numeric: true }));
+
+                if (destLodgings.length === 0) return (
+                  <div style={{ textAlign: "center", color: C.muted, padding: 40 }}>
+                    {searchQ ? `Aucun logement trouvé pour "${form.lodgingSearch}"` : "Aucun logement. Ajoutez-en un !"}
                   </div>
                 );
-              })}
-              {myLodgings.filter(l => l.destination_id === selectedDest.id).length === 0 && <div style={{ textAlign: "center", color: C.muted, padding: 40 }}>Aucun logement. Ajoutez-en un !</div>}
+
+                // Grouper par type de logement
+                const groups = {};
+                destLodgings.forEach(l => {
+                  const modelName = modelById(l.model_id)?.name || "Sans type";
+                  if (!groups[modelName]) groups[modelName] = [];
+                  groups[modelName].push(l);
+                });
+
+                return Object.entries(groups).map(([modelName, groupLodgings]) => (
+                  <div key={modelName} style={{ marginBottom: 20 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10, padding: "8px 14px", background: C.tealDim, borderRadius: 10, border: `1px solid ${C.teal}33` }}>
+                      <span style={{ fontSize: 16 }}>🏠</span>
+                      <span style={{ fontWeight: 800, color: C.teal, fontSize: 15 }}>{modelName}</span>
+                      <span style={{ fontSize: 12, color: C.muted, marginLeft: 4 }}>— {groupLodgings.length} logement(s)</span>
+                    </div>
+                    {groupLodgings.map(l => {
+                      const missing = getLodgingMissing(l.id);
+                      return (
+                        <div key={l.id} style={{ background: C.card, border: `1px solid ${missing > 0 ? C.red + "55" : C.border}`, borderRadius: 14, padding: 16, marginBottom: 8, boxShadow: "0 2px 8px #00000008" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <div onClick={() => setSelectedLodging(l)} style={{ flex: 1, cursor: "pointer" }}>
+                              <div style={{ fontWeight: 700, fontSize: 15 }}>🏠 {l.name}</div>
+                              <div style={{ fontSize: 12, color: C.muted }}>voir inventaire →</div>
+                            </div>
+                            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                              {missing > 0 ? <Badge label={`-${missing} manquants`} color={C.red} /> : <Badge label="✅ Complet" color={C.green} />}
+                              {isAdmin && (
+                                <div style={{ display: "flex", gap: 4, marginLeft: 8 }}>
+                                  <button onClick={e => { e.stopPropagation(); setForm({ ...l }); setModal({ type: "lodging_edit", id: l.id }); }} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, cursor: "pointer", color: C.muted, padding: "6px 9px" }}><Ic d={ic.edit} size={14} /></button>
+                                  <button onClick={e => { e.stopPropagation(); askConfirm(`Supprimer le logement "${l.name}" ? Son inventaire sera aussi supprimé.`, async () => { await supabase.from("inventory_items").delete().eq("lodging_id", l.id); await supabase.from("lodgings").delete().eq("id", l.id); setLodgings(ls => ls.filter(x => x.id !== l.id)); setInventoryItems(items => items.filter(i => i.lodging_id !== l.id)); }); }} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, cursor: "pointer", color: C.red, padding: "6px 9px" }}><Ic d={ic.trash} size={14} /></button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ));
+              })()}
             </div>
           )}
 
