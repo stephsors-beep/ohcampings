@@ -857,7 +857,7 @@ export default function App() {
                   </div>
                 );
               })()}
-              {myLodgings.filter(l => l.destination_id === selectedDest.id).map(l => {
+              {myLodgings.filter(l => l.destination_id === selectedDest.id).sort((a, b) => a.name.localeCompare(b.name, "fr", { numeric: true })).map(l => {
                 const missing = getLodgingMissing(l.id);
                 const m = modelById(l.model_id);
                 return (
