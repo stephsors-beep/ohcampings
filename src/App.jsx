@@ -12,7 +12,7 @@ const C = {
   teal: "#F5A623", tealDim: "#F5A62318", amber: "#E8890A", red: "#EF4444",
   purple: "#5B9BD5", green: "#22C55E", text: "#2C2C2C", muted: "#9A8A78",
 };
-const ROLE_COLORS = { Gérant: C.teal, Gestionnaire: C.purple, Invité: C.amber };
+const ROLE_COLORS = { Gérant: C.teal, Gestionnaire: C.purple, Accueillant: C.amber };
 
 const ESTIVAL_INVENTORY = [
   { category: "Petit électroménager", name: "Cafetière électrique 15T 1,5L à filtre", qty: 1 },
@@ -262,7 +262,7 @@ export default function App() {
 
   const isGerant = currentUser?.role === "Gérant";
   const isAdmin = ["Gérant", "Gestionnaire"].includes(currentUser?.role);
-  const isInvite = currentUser?.role === "Invité";
+  const isInvite = currentUser?.role === "Accueillant";
   const cid = currentUser?.company_id;
 
   // ── Load all data ───────────────────────────────────────────────────────────
@@ -318,7 +318,7 @@ export default function App() {
     const { data: usersData } = await supabase.from("users").insert([
       { company_id: cid, name: "Sophie Martin", email: "s.martin@ohcampings.fr", phone: "06 12 34 56 78", role: "Gérant", see_price: true, password: "1234" },
       { company_id: cid, name: "Marc Dubois", email: "m.dubois@ohcampings.fr", phone: "06 98 76 54 32", role: "Gestionnaire", see_price: false, password: "1234" },
-      { company_id: cid, name: "Léa Bernard", email: "l.bernard@ohcampings.fr", phone: "07 11 22 33 44", role: "Invité", see_price: false, password: "1234" },
+      { company_id: cid, name: "Léa Bernard", email: "l.bernard@ohcampings.fr", phone: "07 11 22 33 44", role: "Accueillant", see_price: false, password: "1234" },
     ]).select();
 
     // Create Estival model
@@ -630,7 +630,7 @@ export default function App() {
   };
 
   // ── Users ───────────────────────────────────────────────────────────────────
-  const openAddUser = () => { setForm({ name: "", email: "", phone: "", role: "Invité", destination_id: "", see_price: false, password: "1234" }); setModal({ type: "user" }); };
+  const openAddUser = () => { setForm({ name: "", email: "", phone: "", role: "Accueillant", destination_id: "", see_price: false, password: "1234" }); setModal({ type: "user" }); };
   const openEditUser = u => { setForm({ ...u }); setModal({ type: "user", id: u.id }); };
   const saveUser = async () => {
     if (!form.name) return;
@@ -1503,8 +1503,8 @@ export default function App() {
           <Field label="Email" type="email" value={form.email || ""} onChange={ff("email")} placeholder="s.martin@ohcampings.fr" />
           <Field label="Téléphone" type="tel" value={form.phone || ""} onChange={ff("phone")} placeholder="06 12 34 56 78" />
           <Field label="Mot de passe" type="password" value={form.password || ""} onChange={ff("password")} placeholder="••••••" />
-          <Field label="Rôle" as="select" value={form.role || "Invité"} onChange={ff("role")}>{["Gérant", "Gestionnaire", "Invité"].map(r => <option key={r}>{r}</option>)}</Field>
-          {form.role === "Invité" && <Field label="Destination attribuée" as="select" value={form.destination_id || ""} onChange={ff("destination_id")}><option value="">— Aucune —</option>{myDests.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}</Field>}
+          <Field label="Rôle" as="select" value={form.role || "Accueillant"} onChange={ff("role")}>{["Gérant", "Gestionnaire", "Accueillant"].map(r => <option key={r}>{r}</option>)}</Field>
+          {form.role === "Accueillant" && <Field label="Destination attribuée" as="select" value={form.destination_id || ""} onChange={ff("destination_id")}><option value="">— Aucune —</option>{myDests.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}</Field>}
           <div style={{ background: C.surface, borderRadius: 10, padding: "0 14px", marginBottom: 14 }}>
             <Toggle label="Peut voir les prix" value={!!(form.see_price === true || form.see_price === "true")} onChange={() => setForm(p => ({ ...p, see_price: !(p.see_price === true || p.see_price === "true") }))} />
           </div>
