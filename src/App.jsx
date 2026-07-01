@@ -1335,7 +1335,6 @@ export default function App() {
           }} full>Sauvegarder</Btn></div>
         </Modal>
       )}
-      )}
 
       {modal?.type === "model" && (
         <Modal title="Nouveau type de logement" onClose={() => setModal(null)}>
